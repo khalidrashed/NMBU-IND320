@@ -6,7 +6,7 @@ IND320 project for analyzing reservoir data using Python, Jupyter Notebook, Pand
 ## Project Links
 
 - **GitHub repository:** https://github.com/khalidrashed/NMBU-IND320
-- **Streamlit app:** https://nmbu-ind320-hljdkvcappvszzw8hkngnz3.streamlit.app/
+- **Streamlit app:**  https://nmbu-ind320-sscdbwzeogng9oauvspozi.streamlit.app/
 
 ## Project
 
