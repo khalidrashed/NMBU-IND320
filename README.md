@@ -5,7 +5,8 @@ This project is part of the NMBU course IND320 Data to Decision. It explores Nor
 ## Project Links
 
 - **GitHub repository:** https://github.com/khalidrashed/NMBU-IND320/tree/part2-work
-- **Streamlit app:** https://nmbu-ind320-sscdbwzeogng9oauvspozi.streamlit.app/
+- **Streamlit app:** https://nmbu-ind320-khalid.streamlit.app/
+-**ENTSO-E electricity flows:** https://nmbu-ind320-khalid.streamlit.app/ENTSOE
 
 ## Project Overview
 
