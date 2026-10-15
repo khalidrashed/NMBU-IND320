@@ -9,11 +9,11 @@ from pymongo import MongoClient
 
 st.set_page_config(
     page_title="ENTSO-E Electricity Flows",
-    page_icon="âš¡",
+    page_icon="⚡",
     layout="wide",
 )
 
-st.title("âš¡ ENTSO-E â€“ Electricity Flows")
+st.title("⚡ ENTSO-E – Electricity Flows")
 st.write("Explore electricity transfers to and from Norway.")
 
 # Load the MongoDB connection string from the project's .env file.
@@ -30,7 +30,10 @@ def load_entsoe_data():
     if not MONGODB_URI:
         raise ValueError("MONGODB_URI is missing from the .env file.")
 
-    client = MongoClient(MONGODB_URI, serverSelectionTimeoutMS=10000)
+    client = MongoClient(
+        MONGODB_URI,
+        serverSelectionTimeoutMS=10000,
+    )
 
     try:
         collection = client["ind320"]["entsoe_crossborder_flows"]
@@ -61,9 +64,17 @@ if df.empty:
     st.warning("No ENTSO-E data was found.")
     st.stop()
 
+
 # Clean and prepare the data.
-df["timestamp"] = pd.to_datetime(df["timestamp"], errors="coerce")
-df["flow_mw"] = pd.to_numeric(df["flow_mw"], errors="coerce")
+df["timestamp"] = pd.to_datetime(
+    df["timestamp"],
+    errors="coerce",
+)
+df["flow_mw"] = pd.to_numeric(
+    df["flow_mw"],
+    errors="coerce",
+)
+
 df = df.dropna(
     subset=[
         "timestamp",
@@ -77,12 +88,14 @@ if df.empty:
     st.warning("No valid observations are available.")
     st.stop()
 
+
 # Create a year column for the year selector.
 df["year"] = df["timestamp"].dt.year
 years = sorted(df["year"].unique().tolist(), reverse=True)
 connections = sorted(df["connection"].unique().tolist())
 
-# Two-column layout as required by the assignment.
+
+# Two-column layout.
 left_col, right_col = st.columns(2)
 
 with left_col:
@@ -106,9 +119,11 @@ with left_col:
         & (df["year"] == selected_year)
     ].copy()
 
-    # Estimate transferred energy using the time until the next observation.
-    # This avoids treating every MW observation as one full MWh.
-    annual = annual.sort_values(["direction", "timestamp"])
+    # Estimate transferred energy using the time until
+    # the next observation.
+    annual = annual.sort_values(
+        ["direction", "timestamp"]
+    )
 
     annual["next_timestamp"] = (
         annual.groupby("direction")["timestamp"].shift(-1)
@@ -119,7 +134,6 @@ with left_col:
     ).dt.total_seconds() / 3600
 
     # Use only positive intervals no longer than one hour.
-    # This handles hourly and 15-minute observations conservatively.
     annual["interval_hours"] = annual["interval_hours"].where(
         annual["interval_hours"].between(0, 1)
     )
@@ -134,7 +148,7 @@ with left_col:
         .sum()
     )
 
-    # Translate the stored direction labels into readable labels.
+    # Translate stored direction labels.
     direction_labels = {
         "to_Norway": "Import to Norway",
         "from_Norway": "Export from Norway",
@@ -150,25 +164,34 @@ with left_col:
             names="direction",
             values="estimated_mwh",
             hole=0.3,
-            title=f"{selected_connection} â€“ {selected_year}",
+            title=f"{selected_connection} – {selected_year}",
         )
-        st.plotly_chart(fig_pie, use_container_width=True)
+
+        st.plotly_chart(
+            fig_pie,
+            use_container_width=True,
+        )
+
         st.caption(
             "Energy is estimated from absolute MW values and the time "
             "to the next observation. Missing intervals are excluded."
         )
     else:
-        st.info("There is not enough consecutive data for this pie chart.")
+        st.info(
+            "There is not enough consecutive data for this pie chart."
+        )
+
 
 with right_col:
     st.subheader("2. Electricity flow by month")
 
-    # Streamlit pills allow selection of one or more months.
     months = st.pills(
         "Select months",
         options=list(range(1, 13)),
         format_func=lambda month: pd.Timestamp(
-            year=2000, month=month, day=1
+            year=2000,
+            month=month,
+            day=1,
         ).strftime("%B"),
         selection_mode="multi",
         default=[1],
@@ -178,22 +201,23 @@ with right_col:
     if not months:
         st.info("Select at least one month.")
     else:
-        # Use the selected year and chosen months for the line chart.
+        # Filter by year and selected months.
         line_data = df[
             (df["year"] == selected_year)
             & (df["timestamp"].dt.month.isin(months))
         ].copy()
 
         if line_data.empty:
-            st.warning("No data exists for the selected months and year.")
+            st.warning(
+                "No data exists for the selected months and year."
+            )
         else:
             line_data["series"] = (
                 line_data["connection"].astype(str)
-                + " â€“ "
+                + " – "
                 + line_data["direction"].astype(str)
             )
 
-            # Sort timestamps to make the lines easier to interpret.
             line_data = line_data.sort_values("timestamp")
 
             fig_line = px.line(
@@ -206,15 +230,19 @@ with right_col:
                     "flow_mw": "Flow (MW)",
                     "series": "Connection and direction",
                 },
-                title=f"Cross-border flow â€“ {selected_year}",
+                title=f"Cross-border flow – {selected_year}",
             )
 
-            st.plotly_chart(fig_line, use_container_width=True)
+            st.plotly_chart(
+                fig_line,
+                use_container_width=True,
+            )
 
             st.caption(
                 "Each line represents a connection and direction. "
                 "Positive and negative readings are shown as reported."
             )
+
 
 # Document the data source below both columns.
 with st.expander("About the data source"):
