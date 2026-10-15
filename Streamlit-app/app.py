@@ -50,6 +50,6 @@ st.subheader("Project links")
 st.markdown(
     "- **GitHub repository:** [https://github.com/khalidrashed/NMBU-IND320]"
     "(https://github.com/khalidrashed/NMBU-IND320)\n"
-    "- **Streamlit app:** [https://nmbu-ind320-khalid-rashed.streamlit.app/]"
-    "(https://nmbu-ind320-khalid-rashed.streamlit.app/)"
+    "- **Streamlit app:** [https://nmbu-ind320-sscdbwzeogng9oauvspozi.streamlit.app/]"
+    "(https://nmbu-ind320-sscdbwzeogng9oauvspozi.streamlit.app/)"
 )
