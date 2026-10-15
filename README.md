@@ -4,7 +4,7 @@ This project is part of the NMBU course IND320 Data to Decision. It explores Nor
 
 ## Project Links
 
-- **GitHub repository:** https://github.com/khalidrashed/NMBU-IND320
+- **GitHub repository:** https://github.com/khalidrashed/NMBU-IND320/tree/part2-work
 - **Streamlit app:** https://nmbu-ind320-sscdbwzeogng9oauvspozi.streamlit.app/
 
 ## Project Overview
@@ -108,9 +108,3 @@ NMBU-IND320/
 ├── README.md
 └── .gitignore
 ```
-
-## Notes
-
-API credentials and database connection strings should be stored in environment variables and must not be committed to GitHub.
-
-The project uses a separate development branch for Part 2 until peer review is complete.
