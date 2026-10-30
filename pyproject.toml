@@ -36,5 +36,6 @@ dependencies = [
     "lorem",
     "pymongo",
     "streamlit",
-    "nbstripout"
+    "nbstripout",
+    "python-dotenv>=1.2.4",
 ]
