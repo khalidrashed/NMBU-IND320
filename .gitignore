@@ -6,3 +6,18 @@ __pycache__/
 desktop.ini
 Thumbs.db
 .vscode/
+
+.env
+.env.*
+client_id.txt
+# Generated data exports and temporary test files
+entsoe_mongodb_export/
+entsoe_crossborder_flows.csv
+nve_cassandra_export.csv
+entsoe_connection_test.csv
+nve_magasinstatistikk_test.csv
+entsoe_errors.txt
+
+# Local test scripts and backup files
+Streamlit-app/2_Plot_backup.py
+Streamlit-app/test_spark_csv.py
