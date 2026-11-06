@@ -1,112 +1,117 @@
-# NMBU-IND320
+# IND320 – Project Work Part 3: Data Quality
 
-This project is part of the NMBU course IND320 Data to Decision. It explores Norwegian reservoir data and cross-border electricity flows using Python, APIs, data processing, databases, and interactive visualizations.
+## Project Description
 
-## Project Links
+This project investigates data quality in geographical, weather, and reservoir filling datasets. The objective is to explore different methods for identifying unusual observations and analysing patterns in time series data.
 
-- **GitHub repository:** https://github.com/khalidrashed/NMBU-IND320
-- **Streamlit app:**  https://nmbu-ind320-khalid.streamlit.app/
+The project combines geographical analysis, weather data processing, anomaly detection, time series decomposition, and frequency analysis.
 
-- **GitHub repository:** https://github.com/khalidrashed/NMBU-IND320/tree/part2-work
+## Methods
 
-## Project Overview
+The following methods are used in the project:
 
-The project has two main parts:
+- **Geographical analysis:** Loading and visualizing geographical datasets, generating random geographical points, and assigning points to electricity areas using spatial joins.
+- **Weather data collection:** Retrieving historical temperature and precipitation data from the Open-Meteo Historical Weather API using ERA5 data.
+- **Precipitation anomaly detection:** Applying the Discrete Cosine Transform (DCT) and Statistical Process Control (SPC).
+- **Temperature anomaly detection:** Using Local Outlier Factor (LOF).
+- **Time series decomposition:** Applying Seasonal-Trend decomposition using LOESS (STL) to reservoir filling data.
+- **Frequency analysis:** Using spectrograms to investigate frequency patterns in reservoir filling data.
 
-- **Part 1:** Explore Norwegian reservoir data through a Jupyter Notebook and an interactive Streamlit application.
-- **Part 2:** Retrieve data from the NVE and ENTSO-E APIs, process and store data using Cassandra, Spark, and MongoDB, and visualize the results in Streamlit.
+## Technologies and Libraries
 
-## Data Sources
+The project uses Python and the following libraries:
 
-### NVE Reservoir Data
-
-Reservoir data is retrieved from the Norwegian Water Resources and Energy Directorate (NVE). The data includes reservoir filling levels, storage capacity, filled energy, and weekly changes.
-
-The Streamlit application uses data stored in MongoDB rather than depending only on a local CSV file.
-
-### ENTSO-E Cross-Border Electricity Flows
-
-The project retrieves cross-border electricity flow data to and from Norway from the ENTSO-E API.
-
-The data includes timestamps, electricity flow in MW, source and destination areas, connections, and flow direction. The data is processed and stored in Cassandra, extracted using Spark, and imported into MongoDB for visualization.
-
-## Jupyter Notebook
-
-The Jupyter Notebook documents the data analysis and project work.
-
-It includes:
-
-- Loading and exploring reservoir data
-- Inspecting data types and missing values
-- Calculating descriptive statistics
-- Creating time-series plots and other visualizations
-- Comparing numerical variables with different scales
-- Documenting project work and AI usage
-
-## Streamlit Application
-
-The Streamlit application provides interactive data tables and visualizations.
-
-The application includes:
-
-1. **Home:** Introduction to the project.
-2. **Data Table:** Displays reservoir data.
-3. **Plot:** Interactive plots with controls for selecting data and time periods.
-4. **About:** Project information and documentation.
-5. **ENTSO-E:** Visualizes cross-border electricity flows using interactive charts.
-
-The ENTSO-E page includes a pie chart showing estimated energy flow into and out of Norway for a selected connection and year, as well as a line chart for selected months.
-
-## Data Processing and Storage
-
-The project uses the following data pipeline:
-
-1. Retrieve reservoir and electricity flow data from external APIs.
-2. Load and process data using Python and Spark.
-3. Store processed data in Cassandra.
-4. Extract ENTSO-E data from Cassandra using Spark.
-5. Import prepared data into MongoDB.
-6. Load data from MongoDB into Streamlit for interactive visualization.
-
-## Technologies
-
-- Python
-- Pandas and NumPy
+- NumPy
+- Pandas
 - Matplotlib
-- Streamlit
-- Jupyter Notebook
-- NVE API
-- ENTSO-E API
-- Apache Spark
-- Apache Cassandra
-- MongoDB
-- Git and GitHub
+- GeoPandas
+- Shapely
+- SciPy
+- Statsmodels
+- Scikit-learn
+- Requests
 
 ## Project Structure
 
 ```text
-NMBU-IND320/
-├── Notbook/
-│   └── IND320_project.ipynb
-├── Streamlit-app/
-│   ├── app.py
-│   ├── data_loader.py
-│   ├── load_entsoe_to_cassandra.py
-│   ├── load_entsoe_to_mongodb.py
-│   ├── load_entsoe_export_to_mongodb.py
-│   ├── extract_entsoe_from_cassandra.py
-│   └── pages/
-│       ├── 1_Data_Table.py
-│       ├── 2_Plot.py
-│       ├── 3_About.py
-│       └── 4_ENTSOE.py
-├── entsoe_data.py
-├── load_nve_to_cassandra.py
-├── export_nve_to_mongodb.py
-├── reservoirs.csv
-├── requirements.txt
-├── pyproject.toml
-├── uv.lock
+IND320_data_quality/
+│
+├── IND320_data_quality.ipynb
 ├── README.md
-└── .gitignore
+├── requirements.txt
+├── .gitignore
+│
+├── data/
+│   ├── geographical/
+│   ├── weather/
+│   └── reservoirs/
+│
+└── figures/
 ```
+
+## How to Run the Project
+
+1. Clone the repository:
+
+   ```bash
+   git clone <YOUR_GITHUB_REPOSITORY_URL>
+   ```
+
+2. Navigate to the project directory:
+
+   ```bash
+   cd IND320_data_quality
+   ```
+
+3. Create a virtual environment:
+
+   ```bash
+   python -m venv .venv
+   ```
+
+4. Activate the virtual environment.
+
+   **Windows PowerShell:**
+
+   ```powershell
+   .venv\Scripts\Activate.ps1
+   ```
+
+5. Install the required packages:
+
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+6. Start Jupyter Notebook:
+
+   ```bash
+   jupyter notebook
+   ```
+
+7. Open `IND320_data_quality.ipynb` and run the notebook cells in order.
+
+## Data Sources
+
+- **Open-Meteo Historical Weather API:** Historical weather data based on the ERA5 reanalysis model.
+- **Geographical datasets:** Used to analyse precipitation regions and electricity areas.
+- **Reservoir filling dataset:** Used for time series decomposition and spectrogram analysis.
+
+The required input datasets must be placed in the appropriate folders before running the notebook. Some datasets may need to be obtained separately.
+
+## Results
+
+The project demonstrates how different methods can be used to investigate data quality:
+
+- DCT and SPC identify potential precipitation anomalies.
+- LOF identifies potential temperature anomalies.
+- STL separates reservoir filling data into trend, seasonal, and residual components.
+- Spectrogram analysis investigates frequency patterns over time.
+
+Detected anomalies are not necessarily incorrect measurements. They require further investigation and interpretation.
+
+## Reproducibility
+
+The notebook contains the analysis steps and visualizations. To reproduce the results, use the required input datasets and install the dependencies listed in `requirements.txt`.
+
+
