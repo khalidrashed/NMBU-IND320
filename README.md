@@ -1,5 +1,5 @@
 # IND320 – Project Work Part 3: Data Quality
-
+## streamlit.app: https://nmbu-ind320-fm3pwfab9yikhurblf3xns.streamlit.app/
 ## Project Description
 
 This project investigates data quality in geographical, weather, and reservoir filling datasets. The objective is to explore different methods for identifying unusual observations and analysing patterns in time series data.
