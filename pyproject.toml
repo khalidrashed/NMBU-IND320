@@ -13,6 +13,7 @@ dependencies = [
     "numpy",
     "setuptools",
     "pandas",
+    "geopandas",
     "openpyxl",
     "datetime",
     "requests",
