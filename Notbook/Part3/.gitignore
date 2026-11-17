@@ -31,3 +31,5 @@ credentials.json
 *.log
 
 # Generated files
+
+NO3_weather_2024_progress.csv
