@@ -37,12 +37,30 @@ st.write(
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
-WEATHER_DIR = (
-    PROJECT_ROOT
+# Search for weather data in two possible locations:
+# 1. Inside the current project folder.
+# 2. Inside the original IND320 folder on the local PC.
+
+WEATHER_DIR_CANDIDATES = [
+    PROJECT_ROOT / "Notbook" / "Part3" / "data" / "weather",
+
+    Path.home()
+    / "OneDrive"
+    / "Desktop"
+    / "IND320"
     / "Notbook"
     / "Part3"
     / "data"
-    / "weather"
+    / "weather",
+]
+
+WEATHER_DIR = next(
+    (
+        path
+        for path in WEATHER_DIR_CANDIDATES
+        if path.is_dir()
+    ),
+    WEATHER_DIR_CANDIDATES[0]
 )
 
 
@@ -54,8 +72,15 @@ if not WEATHER_DIR.exists():
 
     st.error("Weather data directory was not found.")
 
-    st.write("Expected directory:")
-    st.code(str(WEATHER_DIR))
+    st.write("Searched locations:")
+
+    for path in WEATHER_DIR_CANDIDATES:
+        st.code(str(path))
+
+    st.info(
+        "Make sure the weather data is available "
+        "in the original IND320 folder on your PC."
+    )
 
     st.stop()
 
@@ -445,3 +470,4 @@ with st.expander("About this dataset"):
     Measurements from multiple geographical points are
     averaged for each timestamp.
     """)
+
