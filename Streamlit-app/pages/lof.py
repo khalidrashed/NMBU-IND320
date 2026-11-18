@@ -373,3 +373,4 @@ with st.expander("Methodology and limitations"):
     but an unusual observation is not necessarily an erroneous
     measurement or a meteorological event.
     """)
+
