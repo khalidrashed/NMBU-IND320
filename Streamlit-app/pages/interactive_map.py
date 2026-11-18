@@ -301,7 +301,7 @@ if map_type == "Price Area":
         & (reservoirs["date"].dt.date == selected_date)
     ].copy()
 
-    price_data["area"] = "NO" + price_data["omrnr"].astype(int).astype(str)
+    price_data["area"] = "NO" + price_data["area_nr"].astype(int).astype(str)
 
     map_data = price_areas.merge(
         price_data[["area", reservoir_variable]],
@@ -460,7 +460,7 @@ else:
 
     else:
 
-        water_data["area"] = "VASS " + water_data["omrnr"].astype(int).astype(str)
+        water_data["area"] = "VASS " + water_data["area_nr"].astype(int).astype(str)
 
         import plotly.express as px
 
