@@ -80,51 +80,78 @@ def apply_plot_theme(fig, height=500):
 
 
 # ==================================================
-# 3. FIND WEATHER DATA DIRECTORY
+# 3. LOAD MONGODB CONNECTION SETTINGS
 # ==================================================
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
+try:
+    from dotenv import load_dotenv
 
-WEATHER_DIR = PROJECT_ROOT / "Notbook" / "Part3" / "data" / "weather"
+    PROJECT_ROOT = Path(__file__).resolve().parents[2]
+    for env_path in [
+        PROJECT_ROOT / ".env",
+        PROJECT_ROOT.parent / ".env",
+    ]:
+        if env_path.is_file():
+            load_dotenv(env_path, override=False)
+except ImportError:
+    pass
 
-if not WEATHER_DIR.exists():
+MONGODB_URI = os.getenv("MONGODB_URI")
 
-    st.error("Weather data directory was not found.")
+if not MONGODB_URI:
+    try:
+        MONGODB_URI = st.secrets["MONGODB_URI"]
+    except Exception:
+        MONGODB_URI = None
 
-    st.code(str(WEATHER_DIR))
-
-    st.info("Check that the weather data directory exists " "in the project structure.")
-
+if not MONGODB_URI:
+    st.error(
+        "MONGODB_URI was not found. Add it to the project .env file "
+        "or configure it in Streamlit secrets."
+    )
     st.stop()
 
+DATABASE_NAME = "ind320"
+COLLECTION_NAME = "weather_data"
+SUPPORTED_AREAS = ["NO3", "RM"]
+
 
 # ==================================================
-# 4. FIND AVAILABLE WEATHER FILES
+# 4. FIND AVAILABLE WEATHER AREAS IN MONGODB
 # ==================================================
 
-areas = ["NO1", "NO2", "NO3", "NO4", "NO5"]
 
-weather_file_map = {}
-
-for area in areas:
-
-    file_path = WEATHER_DIR / f"{area}_weather_2024.csv"
-
-    if file_path.is_file():
-        weather_file_map[area] = file_path
+from pymongo import MongoClient
 
 
-available_areas = list(weather_file_map.keys())
+@st.cache_data(ttl=3600, show_spinner="Checking weather areas in MongoDB...")
+def get_available_areas():
+    client = MongoClient(
+        MONGODB_URI,
+        serverSelectionTimeoutMS=10000,
+    )
+    try:
+        collection = client[DATABASE_NAME][COLLECTION_NAME]
+        found = collection.distinct(
+            "region",
+            {"region": {"$in": SUPPORTED_AREAS}},
+        )
+        return [area for area in SUPPORTED_AREAS if area in found]
+    finally:
+        client.close()
+
+
+try:
+    available_areas = get_available_areas()
+except Exception as error:
+    st.error(f"Could not connect to MongoDB weather data: {error}")
+    st.stop()
 
 if not available_areas:
-
-    st.error("No Norwegian weather files were found.")
-
-    st.write("Files found in weather directory:")
-
-    for file in WEATHER_DIR.iterdir():
-        st.write(file.name)
-
+    st.error(
+        f"No supported regions (NO3 or RM) were found in "
+        f"{DATABASE_NAME}.{COLLECTION_NAME}."
+    )
     st.stop()
 
 
@@ -157,17 +184,45 @@ st.session_state["selected_no_area"] = selected_area
 
 
 # ==================================================
-# 6. LOAD WEATHER DATA
+# 6. LOAD WEATHER DATA FROM MONGODB
 # ==================================================
-
 
 @st.cache_data(
     ttl=3600,
-    show_spinner="Loading weather data...",
+    show_spinner="Loading weather data from MongoDB...",
 )
-def load_weather(file_path):
+def load_weather(region):
+    client = MongoClient(
+        MONGODB_URI,
+        serverSelectionTimeoutMS=10000,
+    )
 
-    data = pd.read_csv(file_path)
+    try:
+        collection = client[DATABASE_NAME][COLLECTION_NAME]
+        projection = {
+            "_id": 0,
+            "time": 1,
+            "temperature_2m": 1,
+            "precipitation": 1,
+            "point_id": 1,
+            "region": 1,
+            "latitude": 1,
+            "longitude": 1,
+        }
+
+        documents = list(
+            collection.find(
+                {"region": region},
+                projection,
+            ).sort("time", 1)
+        )
+    finally:
+        client.close()
+
+    if not documents:
+        return pd.DataFrame()
+
+    data = pd.DataFrame(documents)
 
     required_columns = [
         "time",
@@ -175,52 +230,38 @@ def load_weather(file_path):
         "precipitation",
         "point_id",
     ]
-
     missing_columns = [
-        column for column in required_columns if column not in data.columns
+        column for column in required_columns
+        if column not in data.columns
     ]
 
     if missing_columns:
-
-        raise ValueError("Missing columns: " + ", ".join(missing_columns))
+        raise ValueError(
+            "MongoDB weather documents are missing fields: "
+            + ", ".join(missing_columns)
+        )
 
     data["time"] = pd.to_datetime(
         data["time"],
         errors="coerce",
-    )
+        utc=True,
+    ).dt.tz_convert(None)
 
-    for column in [
-        "temperature_2m",
-        "precipitation",
-    ]:
-
-        data[column] = pd.to_numeric(
-            data[column],
-            errors="coerce",
-        )
+    for column in ["temperature_2m", "precipitation", "point_id"]:
+        data[column] = pd.to_numeric(data[column], errors="coerce")
 
     data = data.dropna(subset=["time"])
+    return data.sort_values("time").reset_index(drop=True)
 
-    return data.sort_values("time")
-
-
-weather_file = weather_file_map[selected_area]
 
 try:
-
-    raw_data = load_weather(str(weather_file))
-
+    raw_data = load_weather(selected_area)
 except Exception as error:
-
     st.error(f"Could not load weather data: {error}")
-
     st.stop()
 
-
 if raw_data.empty:
-
-    st.warning("The weather file contains no valid observations.")
-
+    st.warning(f"No valid weather observations were found for {selected_area}.")
     st.stop()
 
 
@@ -241,7 +282,7 @@ weather = (
     .sort_values("time")
 )
 
-st.success(f"Loaded {weather_file.name}: " f"{len(raw_data):,} hourly-point records.")
+st.success(f"Loaded {len(raw_data):,} hourly-point records for {selected_area} from MongoDB.")
 
 
 # ==================================================
@@ -503,7 +544,7 @@ with tab1:
 
         st.plotly_chart(
             fig_original,
-            use_container_width=True,
+            width="stretch",
             theme=None,
         )
 
@@ -544,7 +585,7 @@ with tab1:
 
         st.plotly_chart(
             fig_filtered,
-            use_container_width=True,
+            width="stretch",
             theme=None,
         )
 
@@ -601,7 +642,7 @@ with tab1:
 
         st.plotly_chart(
             fig_spc,
-            use_container_width=True,
+            width="stretch",
             theme=None,
         )
 
@@ -626,7 +667,7 @@ with tab1:
                         "status",
                     ]
                 ],
-                use_container_width=True,
+                width="stretch",
                 hide_index=True,
             )
 
@@ -724,7 +765,7 @@ with tab2:
 
             st.plotly_chart(
                 fig_weather,
-                use_container_width=True,
+                width="stretch",
                 theme=None,
             )
 
@@ -757,7 +798,7 @@ with tab2:
 
             st.plotly_chart(
                 fig_lof,
-                use_container_width=True,
+                width="stretch",
                 theme=None,
             )
 
@@ -807,7 +848,7 @@ with tab2:
                             "status",
                         ]
                     ],
-                    use_container_width=True,
+                    width="stretch",
                     hide_index=True,
                 )
 
