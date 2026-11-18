@@ -48,7 +48,7 @@ pages = {
         ),
     ],
 
-    "Part 1 – Dashboard Basics": [
+    "Dashboard Basics": [
         st.Page(
             "pages/1_Data_Table.py",
             title="Data Table",
@@ -66,7 +66,7 @@ pages = {
         ),
     ],
 
-    "Part 2 – Data Sources": [
+    "Data Sources": [
         st.Page(
             "pages/4_ENTSOE.py",
             title="ENTSO-E",
@@ -74,7 +74,7 @@ pages = {
         ),
     ],
 
-    "Part 3 – Data Quality": [
+    "Data Quality": [
         st.Page(
             "pages/6_Meteorological_Data.py",
             title="Meteorological Data",
