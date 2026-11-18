@@ -75,7 +75,6 @@ with col1:
     ### ⚡  – Data Sources
 
     - ENTSO-E Energy Data
-    - Currency Rates
     - MongoDB Data
     """)
 
