@@ -1,79 +1,146 @@
-"""
-Page 2: Data Table.
 
-Requirement:
-    "A table showing the imported data. Use the row-wise LineChartColumn()
-     to display the first month of the data series. There should be one row
-     in the table for each column of the imported data."
 """
+Data loading and caching for the IND320 Streamlit app.
+
+Loads reservoir data from reservoirs.csv,
+renames columns to English, parses dates,
+converts numerical columns and caches the result.
+"""
+
+from pathlib import Path
+
 import pandas as pd
 import streamlit as st
 
-from data_loader import load_data
 
-st.title("📋 Data Table")
+# ==================================================
+# 1. PROJECT PATHS
+# ==================================================
 
-df = load_data()
+_HERE = Path(__file__).resolve().parent
+_PROJECT_ROOT = _HERE.parent
 
-st.write(
-    f"Loaded **{len(df):,}** rows and **{df.shape[1]}** columns. "
-    f"Period: **{df['date'].min().date()}** → **{df['date'].max().date()}**."
-)
+# Search for reservoirs.csv in the original locations
+_CANDIDATES = [
+    _HERE / "reservoirs.csv",
+    _PROJECT_ROOT / "reservoirs.csv",
+    _PROJECT_ROOT / "Notebook" / "reservoirs.csv",
+    _PROJECT_ROOT / "Notbook" / "reservoirs.csv",
+    _PROJECT_ROOT / "data" / "reservoirs.csv",
+    _PROJECT_ROOT / "Notbook" / "data" / "reservoirs.csv",
+]
 
-# ---------------------------------------------------------------------------
-# One row per column of the imported data.
-# "First month" = first 30 time-ordered observations of that column,
-# shown as an inline LineChartColumn sparkline.
-# ---------------------------------------------------------------------------
-first_month = df.head(30)
 
-rows = []
-for col in df.columns:
-    series = df[col]
-    fm = first_month[col]
+# ==================================================
+# 2. COLUMN RENAMING
+# ==================================================
 
-    if pd.api.types.is_numeric_dtype(series):
-        spark = fm.dropna().astype(float).tolist()
-        mean_val = float(series.mean())
-        min_val = float(series.min())
-        max_val = float(series.max())
-    else:
-        spark = []
-        mean_val = min_val = max_val = None
+RENAME_MAP = {
+    "dato_Id": "date",
+    "dato": "date",
+    "omrType": "area_type",
+    "omr_type": "area_type",
+    "omrnr": "area_nr",
+    "omr_nr": "area_nr",
+    "iso_aar": "iso_year",
+    "iso_uke": "iso_week",
+    "fyllingsgrad": "fill_ratio",
+    "kapasitet_TWh": "capacity_TWh",
+    "kapasitet_twh": "capacity_TWh",
+    "fylling_TWh": "filled_TWh",
+    "fylling_twh": "filled_TWh",
+    "neste_Publiseringsdato": "next_publication",
+    "neste_publiseringsdato": "next_publication",
+    "fyllingsgrad_forrige_uke": "fill_ratio_prev_week",
+    "endring_fyllingsgrad": "fill_ratio_change",
+}
 
-    rows.append(
-        {
-            "Column": col,
-            "Dtype": str(series.dtype),
-            "Mean": mean_val,
-            "Min": min_val,
-            "Max": max_val,
-            "First month": spark,
-        }
+
+# ==================================================
+# 3. NUMERICAL COLUMNS
+# ==================================================
+
+NUMERIC_COLS = [
+    "fill_ratio",
+    "capacity_TWh",
+    "filled_TWh",
+    "fill_ratio_prev_week",
+    "fill_ratio_change",
+]
+
+
+# ==================================================
+# 4. FIND CSV FILE
+# ==================================================
+
+def csv_path() -> Path:
+    """
+    Find reservoirs.csv in the project directories.
+    """
+
+    for path in _CANDIDATES:
+        if path.is_file():
+            return path
+
+    searched_paths = "\n".join(
+        str(path) for path in _CANDIDATES
     )
 
-table_df = pd.DataFrame(rows)
+    raise FileNotFoundError(
+        "Could not find reservoirs.csv.\n"
+        "Searched locations:\n"
+        f"{searched_paths}"
+    )
 
-st.dataframe(
-    table_df,
-    column_config={
-        "First month": st.column_config.LineChartColumn(
-            "First month",
-            width="large",
-            help="First 30 time-ordered observations of each column.",
-        ),
-        "Mean": st.column_config.NumberColumn(format="%.4f"),
-        "Min": st.column_config.NumberColumn(format="%.4f"),
-        "Max": st.column_config.NumberColumn(format="%.4f"),
-    },
-    use_container_width=True,
-    hide_index=True,
-)
 
-st.caption(
-    "Each row corresponds to one column from the imported CSV. "
-    "The 'First month' sparkline shows the first 30 observations."
-)
+# ==================================================
+# 5. LOAD AND CACHE DATA
+# ==================================================
 
-with st.expander("Show raw first 20 rows"):
-    st.dataframe(df.head(20), use_container_width=True)
+@st.cache_data(show_spinner="Loading reservoir data...")
+def load_data() -> pd.DataFrame:
+    """
+    Load, clean and cache reservoir data from CSV.
+    """
+
+    path = csv_path()
+
+    df = pd.read_csv(path)
+
+    # Rename columns to English
+    df = df.rename(
+        columns=RENAME_MAP
+    ).copy()
+
+    # Parse dates
+    if "date" in df.columns:
+        df["date"] = pd.to_datetime(
+            df["date"],
+            errors="coerce"
+        )
+
+    if "next_publication" in df.columns:
+        df["next_publication"] = pd.to_datetime(
+            df["next_publication"],
+            errors="coerce"
+        )
+
+    # Convert numerical columns
+    for column in NUMERIC_COLS:
+
+        if column in df.columns:
+
+            df[column] = pd.to_numeric(
+                df[column],
+                errors="coerce"
+            )
+
+    # Sort by date
+    if "date" in df.columns:
+
+        df = (
+            df.sort_values("date")
+            .reset_index(drop=True)
+        )
+
+    return df
