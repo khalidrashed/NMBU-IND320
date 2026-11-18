@@ -29,18 +29,18 @@ pages = {
         st.Page("pages/about.py", title="About the Project", icon="ℹ️"),
     ],
 
-    "Part 1 – Dashboard Basics": [
+    "Dashboard Basics": [
         st.Page("pages/1_Data_Table.py", title="Data Table", icon="📋"),
         st.Page("pages/2_Plot.py", title="Plot", icon="📈"),
         st.Page("pages/5_Reservoir_Statistics.py", title="Reservoir Statistics", icon="💧"),
     ],
 
-    "Part 2 – Data Sources": [
+    "Data Sources": [
         st.Page("pages/4_ENTSOE.py", title="ENTSO-E", icon="⚡"),
         st.Page("pages/currency_rates.py", title="Currency Rates", icon="💱"),
     ],
 
-    "Part 3 – Data Quality": [
+    "Data Quality": [
         st.Page("pages/6_Meteorological_Data.py", title="Meteorological Data", icon="🌦️"),
         st.Page("pages/7_Time_Series_Analysis.py", title="Time Series Analysis", icon="📊"),
         st.Page("pages/8_Data_Quality_Analysis.py", title="Data Quality Analysis", icon="🔍"),
