@@ -1,9 +1,12 @@
+import os
 from pathlib import Path
 
 import folium
 import geopandas as gpd
 import pandas as pd
 import streamlit as st
+from pymongo import MongoClient
+from data_loader import load_data
 from branca.colormap import LinearColormap
 from streamlit_folium import st_folium
 
@@ -29,20 +32,58 @@ WEATHER_GEOJSON = (
     DATA_DIR / "shapefiles" / "precipitation_areas" / "nve_regions.geojson"
 )
 
-RESERVOIR_CSV = PROJECT_DIR / "reservoirs.csv"
-POINTS_CSV = DATA_DIR / "data" / "weather" / "random_points_2024.csv"
-
 
 # --------------------------------------------------
 # Data loading
 # --------------------------------------------------
 
 
-@st.cache_data
+def get_mongodb_uri():
+    """Read MongoDB URI from Streamlit Secrets or environment variables."""
+    try:
+        uri = st.secrets.get("MONGODB_URI")
+    except Exception:
+        uri = None
+    return uri or os.getenv("MONGODB_URI")
+
+
+@st.cache_data(ttl=900)
 def load_reservoirs():
-    df = pd.read_csv(RESERVOIR_CSV)
-    df["dato_Id"] = pd.to_datetime(df["dato_Id"])
-    return df
+    # Use the project's shared loader for ind320.nve_magasinstatistikk.
+    uri = get_mongodb_uri()
+    if uri:
+        os.environ["MONGODB_URI"] = uri
+
+    df = load_data().copy()
+
+    # data_loader.py normalizes the original Norwegian field names.
+    rename_fallbacks = {
+        "omrType": "area_type",
+        "dato_Id": "date",
+        "omrnr": "area_nr",
+        "fyllingsgrad": "fill_ratio",
+        "fylling_TWh": "filled_TWh",
+        "endring_fyllingsgrad": "fill_ratio_change",
+    }
+    for old_name, new_name in rename_fallbacks.items():
+        if new_name not in df.columns and old_name in df.columns:
+            df = df.rename(columns={old_name: new_name})
+
+    required = {"area_type", "date", "area_nr"}
+    missing = required.difference(df.columns)
+    if missing:
+        raise ValueError(
+            "Reservoir collection is missing columns: "
+            + ", ".join(sorted(missing))
+        )
+
+    df["date"] = pd.to_datetime(df["date"], errors="coerce")
+    df["area_nr"] = pd.to_numeric(df["area_nr"], errors="coerce")
+    for column in ["fill_ratio", "filled_TWh", "fill_ratio_change"]:
+        if column in df.columns:
+            df[column] = pd.to_numeric(df[column], errors="coerce")
+
+    return df.dropna(subset=["date", "area_nr"])
 
 
 @st.cache_data
@@ -50,28 +91,71 @@ def load_geodata(path):
     return gpd.read_file(path).to_crs("EPSG:4326")
 
 
-@st.cache_data
+@st.cache_data(ttl=900)
 def load_weather_points():
-    return pd.read_csv(POINTS_CSV)
+    """Load unique weather sampling points from ind320.weather_data."""
+    uri = get_mongodb_uri()
+    if not uri:
+        raise ValueError(
+            "MONGODB_URI is not configured. Add it to Streamlit Secrets "
+            "or the local .env/environment."
+        )
+
+    client = MongoClient(uri, serverSelectionTimeoutMS=10000)
+    try:
+        collection = client["ind320"]["weather_data"]
+        cursor = collection.find(
+            {},
+            {
+                "_id": 0,
+                "point_id": 1,
+                "region": 1,
+                "REGION": 1,
+                "latitude": 1,
+                "longitude": 1,
+            },
+        )
+        points = pd.DataFrame(list(cursor))
+    finally:
+        client.close()
+
+    if points.empty:
+        return pd.DataFrame(columns=["point_id", "REGION", "latitude", "longitude"])
+
+    if "REGION" not in points.columns:
+        points["REGION"] = points["region"] if "region" in points.columns else None
+    elif "region" in points.columns:
+        points["REGION"] = points["REGION"].fillna(points["region"])
+
+    points["latitude"] = pd.to_numeric(points["latitude"], errors="coerce")
+    points["longitude"] = pd.to_numeric(points["longitude"], errors="coerce")
+    points = points.dropna(subset=["latitude", "longitude"])
+
+    # One marker per sampling point, rather than one per timestamp.
+    if "point_id" in points.columns:
+        points = points.drop_duplicates(subset=["point_id"])
+    else:
+        points = points.drop_duplicates(subset=["latitude", "longitude"])
+
+    return points
 
 
 # --------------------------------------------------
 # Check and load files
 # --------------------------------------------------
 
-required_files = [
-    PRICE_GEOJSON,
-    WEATHER_GEOJSON,
-    RESERVOIR_CSV,
-    POINTS_CSV,
-]
-
+required_files = [PRICE_GEOJSON, WEATHER_GEOJSON]
 missing = [str(path) for path in required_files if not path.exists()]
 
 if missing:
-    st.error("Missing data files:")
+    st.error("Missing geographical boundary files:")
     for file in missing:
         st.write(file)
+    st.info(
+        "Reservoir and weather-point records are loaded from MongoDB. "
+        "The electricity-area and NVE-region GeoJSON boundary files "
+        "must still be included in the project."
+    )
     st.stop()
 
 try:
@@ -96,18 +180,35 @@ map_type = st.sidebar.selectbox(
     ["Price Area", "Weather Area", "Water Area"],
 )
 
-reservoir_variable = st.sidebar.selectbox(
+reservoir_variable_labels = {
+    "Filling level (%)": "fill_ratio",
+    "Filled volume (TWh)": "filled_TWh",
+    "Weekly change (percentage points)": "fill_ratio_change",
+}
+reservoir_variable_label = st.sidebar.selectbox(
     "Reservoir variable",
-    ["fyllingsgrad", "fylling_TWh", "endring_fyllingsgrad"],
+    list(reservoir_variable_labels.keys()),
 )
+reservoir_variable = reservoir_variable_labels[reservoir_variable_label]
+
+if reservoir_variable not in reservoirs.columns:
+    st.error(
+        f"The selected variable '{reservoir_variable}' is not available "
+        "in the MongoDB reservoir collection."
+    )
+    st.stop()
 
 weather_variable = st.sidebar.selectbox(
     "Weather variable",
     ["temperature_2m", "precipitation"],
 )
 
-date_min = reservoirs["dato_Id"].min().date()
-date_max = reservoirs["dato_Id"].max().date()
+if reservoirs.empty:
+    st.error("MongoDB returned no reservoir records.")
+    st.stop()
+
+date_min = reservoirs["date"].min().date()
+date_max = reservoirs["date"].max().date()
 
 selected_date = st.sidebar.date_input(
     "Select date",
@@ -196,8 +297,8 @@ if map_type == "Price Area":
     st.subheader("Electricity Price Areas")
 
     price_data = reservoirs[
-        (reservoirs["omrType"] == "EL")
-        & (reservoirs["dato_Id"].dt.date == selected_date)
+        (reservoirs["area_type"].astype(str).str.upper() == "EL")
+        & (reservoirs["date"].dt.date == selected_date)
     ].copy()
 
     price_data["area"] = "NO" + price_data["omrnr"].astype(int).astype(str)
@@ -268,9 +369,7 @@ elif map_type == "Weather Area":
 
     weather_map = weather_regions.copy()
 
-    # Weather measurements are not yet available in this CSV.
-    # The map therefore shows the geographical regions only.
-
+    # Display the NVE region boundaries and the MongoDB sampling locations.
     weather_map["weather_value"] = 0.0
 
     map_object = create_polygon_map(
@@ -278,6 +377,23 @@ elif map_type == "Weather Area":
         "REGIONNAVN",
         "weather_value",
     )
+
+    # Plot the MongoDB sampling locations on top of the NVE polygons.
+    points_layer = folium.FeatureGroup(name="Weather sampling points")
+    for _, point_row in weather_points.iterrows():
+        folium.CircleMarker(
+            location=[point_row["latitude"], point_row["longitude"]],
+            radius=3,
+            color="#1f78b4",
+            fill=True,
+            fill_opacity=0.75,
+            tooltip=(
+                f"Region: {point_row.get('REGION', 'N/A')} | "
+                f"Point ID: {point_row.get('point_id', 'N/A')}"
+            ),
+        ).add_to(points_layer)
+    points_layer.add_to(map_object)
+    folium.LayerControl().add_to(map_object)
 
     result = st_folium(
         map_object,
@@ -312,14 +428,18 @@ elif map_type == "Weather Area":
     ):
         st.success(f"Selected weather region: {selected_region}")
 
-        region_points = weather_points[weather_points["REGION"] == selected_region]
+        region_points = weather_points[
+            weather_points["REGION"].astype(str).str.upper()
+            == str(selected_region).upper()
+        ]
 
         st.metric("Sampling points", len(region_points))
 
-        st.caption(
-            "Historical weather measurements must be connected "
-            "before this map can display actual weather values."
-        )
+        if region_points.empty:
+            st.info(
+                "No MongoDB weather sampling points were found for this region. "
+                "Check the region values in ind320.weather_data."
+            )
 
 
 # --------------------------------------------------
@@ -331,8 +451,8 @@ else:
     st.subheader("Water Reservoir Regions")
 
     water_data = reservoirs[
-        (reservoirs["omrType"] == "VASS")
-        & (reservoirs["dato_Id"].dt.date == selected_date)
+        (reservoirs["area_type"].astype(str).str.upper() == "VASS")
+        & (reservoirs["date"].dt.date == selected_date)
     ].copy()
 
     if water_data.empty:
