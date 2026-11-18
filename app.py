@@ -28,12 +28,9 @@ if "selected_date" not in st.session_state:
 if "weather_variable" not in st.session_state:
     st.session_state["weather_variable"] = "temperature_2m"
 
-if "forecast_horizon" not in st.session_state:
-    st.session_state["forecast_horizon"] = 12
-
 
 # --------------------------------------------------
-# Navigation
+# Navigation: Project Work Parts 1, 2 and 3 only
 # --------------------------------------------------
 
 pages = {
@@ -50,38 +47,38 @@ pages = {
             icon="ℹ️",
         ),
     ],
-    "Data": [
+
+    "Part 1 – Dashboard Basics": [
         st.Page(
             "pages/1_Data_Table.py",
             title="Data Table",
             icon="📋",
         ),
         st.Page(
-            "pages/4_ENTSOE.py",
-            title="ENTSO-E",
-            icon="⚡",
+            "pages/2_Plot.py",
+            title="Plot",
+            icon="📈",
         ),
         st.Page(
             "pages/5_Reservoir_Statistics.py",
             title="Reservoir Statistics",
             icon="💧",
         ),
+    ],
+
+    "Part 2 – Data Sources": [
+        st.Page(
+            "pages/4_ENTSOE.py",
+            title="ENTSO-E",
+            icon="⚡",
+        ),
+    ],
+
+    "Part 3 – Data Quality": [
         st.Page(
             "pages/6_Meteorological_Data.py",
             title="Meteorological Data",
             icon="🌦️",
-        ),
-        st.Page(
-            "pages/currency_rates.py",
-            title="Currency Rates",
-            icon="💱",
-        ),
-    ],
-    "Analysis": [
-        st.Page(
-            "pages/2_Plot.py",
-            title="Plot",
-            icon="📈",
         ),
         st.Page(
             "pages/7_Time_Series_Analysis.py",
@@ -94,11 +91,6 @@ pages = {
             icon="🔍",
         ),
         st.Page(
-            "pages/satv.py",
-            title="SATV",
-            icon="🌡️",
-        ),
-        st.Page(
             "pages/lof.py",
             title="Local Outlier Factor",
             icon="📉",
@@ -109,18 +101,12 @@ pages = {
             icon="🔗",
         ),
     ],
-    "Geographic Analysis": [
+
+    "Shared Tools": [
         st.Page(
             "pages/interactive_map.py",
             title="Interactive Map",
             icon="🗺️",
-        ),
-    ],
-    "Machine Learning": [
-        st.Page(
-            "pages/forecasting.py",
-            title="Reservoir Forecasting",
-            icon="🔮",
         ),
     ],
 }
@@ -131,5 +117,5 @@ pages = {
 # --------------------------------------------------
 
 navigation = st.navigation(pages)
-
 navigation.run()
+
