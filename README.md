@@ -5,7 +5,7 @@ This project is part of the **IND320 – Data to Decision** course at the Norweg
 The project focuses on Norwegian reservoir data, electricity flows and weather data. It uses Python, APIs, databases, data analysis, machine learning and interactive visualizations.
 
 ## Project Links
-
+Streamlit: https://nmbu-ind320-sscdbwzeogng9oauvspozi.streamlit.app/
 
 
 ## Project Overview
