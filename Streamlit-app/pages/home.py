@@ -1,6 +1,5 @@
 import streamlit as st
-import pandas as pd
-from pathlib import Path
+from data_loader import load_data
 
 # --------------------------------------------------
 # Page title
@@ -21,28 +20,23 @@ perform exploratory analysis and investigate forecasting methods.
 st.divider()
 
 # --------------------------------------------------
-# Load reservoir data
+# Load reservoir data from MongoDB
 # --------------------------------------------------
-
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
-DATA_FILE = PROJECT_ROOT / "reservoirs.csv"
-
-
-@st.cache_data
-def load_reservoir_data(file_path):
-    return pd.read_csv(file_path)
-
 
 st.subheader("📊 Data Overview")
 
-if DATA_FILE.exists():
-    try:
-        df = load_reservoir_data(str(DATA_FILE))
+try:
+    # Shared loader reads from MongoDB Atlas:
+    # database: ind320
+    # collection: nve_magasinstatistikk
+    df = load_data()
 
+    if df is None or df.empty:
+        st.warning("The reservoir collection in MongoDB contains no records.")
+    else:
         col1, col2, col3 = st.columns(3)
 
         col1.metric("Total observations", f"{len(df):,}")
-
         col2.metric("Number of variables", len(df.columns))
 
         if "area_type" in df.columns:
@@ -53,11 +47,12 @@ if DATA_FILE.exists():
         with st.expander("Preview reservoir dataset"):
             st.dataframe(df.head(10), use_container_width=True)
 
-    except Exception as error:
-        st.error(f"Could not load reservoir data: {error}")
-
-else:
-    st.warning(f"Reservoir dataset was not found: {DATA_FILE}")
+except Exception as error:
+    st.error(f"Could not load reservoir data from MongoDB: {error}")
+    st.caption(
+        "Check that MONGODB_URI is configured in Streamlit Secrets "
+        "and that the app can access the MongoDB Atlas cluster."
+    )
 
 st.divider()
 
@@ -70,7 +65,6 @@ st.subheader("Application Sections")
 col1, col2 = st.columns(2)
 
 with col1:
-
     st.markdown("""
     ### 📊 Data Overview
 
@@ -88,7 +82,6 @@ with col1:
     """)
 
 with col2:
-
     st.markdown("""
     ### 🗺️ Geographic Analysis
 
@@ -133,3 +126,4 @@ st.info(
 st.divider()
 
 st.caption("IND320 – Energy Data Analysis and Machine Learning | NMBU")
+
