@@ -265,13 +265,12 @@ stl_tab, spec_tab = st.tabs(
 
 
 @st.cache_data(show_spinner="Calculating STL decomposition...")
-def calculate_stl(values, dates, period, robust):
-    """Calculate STL decomposition."""
+def calculate_stl(values, period, robust):
+    """Calculate STL decomposition using the weekly observations."""
 
-    input_series = pd.Series(
-        values,
-        index=pd.to_datetime(dates),
-    )
+    # Use a simple positional index for the cached calculation.
+    # The actual dates are applied later when plotting the components.
+    input_series = pd.Series(values)
 
     result = STL(
         input_series,
@@ -336,7 +335,6 @@ with stl_tab:
 
                 observed, trend, seasonal, residual = calculate_stl(
                     series.to_numpy(),
-                    series.index,
                     int(period),
                     robust,
                 )
@@ -379,7 +377,7 @@ with stl_tab:
 
                 st.plotly_chart(
                     fig,
-                    use_container_width=True,
+                    width="stretch",
                     theme=None,
                 )
 
@@ -512,7 +510,7 @@ with spec_tab:
 
                 st.plotly_chart(
                     fig,
-                    use_container_width=True,
+                    width="stretch",
                     theme=None,
                 )
 
