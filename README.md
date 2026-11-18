@@ -1,112 +1,291 @@
-# NMBU-IND320
+# NMBU-IND320 – Data to Decision
 
-This project is part of the NMBU course IND320 Data to Decision. It explores Norwegian reservoir data and cross-border electricity flows using Python, APIs, data processing, databases, and interactive visualizations.
+This project is part of the **IND320 – Data to Decision** course at the Norwegian University of Life Sciences (NMBU).
+
+The project focuses on Norwegian reservoir data, electricity flows and weather data. It uses Python, APIs, databases, data analysis, machine learning and interactive visualizations.
 
 ## Project Links
 
 - **GitHub repository:** https://github.com/khalidrashed/NMBU-IND320
-- **Streamlit app:**  https://nmbu-ind320-khalid.streamlit.app/
-
-- **GitHub repository:** https://github.com/khalidrashed/NMBU-IND320/tree/part2-work
+- **Streamlit application:** https://nmbu-ind320-khalid.streamlit.app/
+- **Part 2 development branch:** https://github.com/khalidrashed/NMBU-IND320/tree/part2-work
 
 ## Project Overview
 
-The project has two main parts:
+The project is divided into three main parts.
 
-- **Part 1:** Explore Norwegian reservoir data through a Jupyter Notebook and an interactive Streamlit application.
-- **Part 2:** Retrieve data from the NVE and ENTSO-E APIs, process and store data using Cassandra, Spark, and MongoDB, and visualize the results in Streamlit.
+### Part 1 – Reservoir Data Analysis
+
+Part 1 focuses on exploring Norwegian reservoir statistics from NVE.
+
+The work includes:
+
+- Loading and exploring reservoir data
+- Checking data types and missing values
+- Calculating descriptive statistics
+- Creating time-series plots
+- Comparing reservoir variables
+- Building an interactive Streamlit application
+
+### Part 2 – Energy Data and Databases
+
+Part 2 focuses on retrieving, processing and storing energy data.
+
+The work includes:
+
+- Retrieving data from the NVE and ENTSO-E APIs
+- Processing data using Python and Apache Spark
+- Storing data in Apache Cassandra
+- Extracting data from Cassandra
+- Importing prepared data into MongoDB
+- Visualizing energy data in Streamlit
+
+### Part 3 – Weather Data and Advanced Analysis
+
+Part 3 focuses on weather data and its relationship with Norwegian energy and reservoir data.
+
+The work includes:
+
+- Selecting 1,000 sampling points per precipitation region
+- Retrieving historical weather data from the Open-Meteo API using ERA5
+- Processing temperature and precipitation data
+- Applying DCT and SATV methods with SPC analysis
+- Detecting anomalies using Local Outlier Factor (LOF)
+- Performing STL decomposition
+- Performing spectrogram analysis
+- Creating plots and interactive analysis tools in Streamlit
 
 ## Data Sources
 
-### NVE Reservoir Data
+### NVE Reservoir Statistics
 
-Reservoir data is retrieved from the Norwegian Water Resources and Energy Directorate (NVE). The data includes reservoir filling levels, storage capacity, filled energy, and weekly changes.
+Reservoir data is retrieved from the Norwegian Water Resources and Energy Directorate (NVE).
 
-The Streamlit application uses data stored in MongoDB rather than depending only on a local CSV file.
+The dataset includes:
 
-### ENTSO-E Cross-Border Electricity Flows
+- Reservoir filling levels
+- Storage capacity
+- Filled energy in TWh
+- Weekly changes
+- Water and electricity area information
 
-The project retrieves cross-border electricity flow data to and from Norway from the ENTSO-E API.
+The Streamlit application loads reservoir data from MongoDB instead of depending on a local CSV file.
 
-The data includes timestamps, electricity flow in MW, source and destination areas, connections, and flow direction. The data is processed and stored in Cassandra, extracted using Spark, and imported into MongoDB for visualization.
+### ENTSO-E Electricity Data
 
-## Jupyter Notebook
+Electricity flow data is retrieved from the ENTSO-E API.
 
-The Jupyter Notebook documents the data analysis and project work.
+The data includes:
 
-It includes:
+- Timestamps
+- Electricity flow in MW
+- Source and destination areas
+- Connections between countries
+- Flow direction
 
-- Loading and exploring reservoir data
-- Inspecting data types and missing values
-- Calculating descriptive statistics
-- Creating time-series plots and other visualizations
-- Comparing numerical variables with different scales
-- Documenting project work and AI usage
+The data is processed and stored using Cassandra, Spark and MongoDB.
 
-## Streamlit Application
+### Weather Data – Open-Meteo and ERA5
 
-The Streamlit application provides interactive data tables and visualizations.
+Historical weather data is retrieved using the Open-Meteo API and ERA5 data.
 
-The application includes:
+The main weather variables are:
 
-1. **Home:** Introduction to the project.
-2. **Data Table:** Displays reservoir data.
-3. **Plot:** Interactive plots with controls for selecting data and time periods.
-4. **About:** Project information and documentation.
-5. **ENTSO-E:** Visualizes cross-border electricity flows using interactive charts.
+- Temperature at 2 metres
+- Precipitation
+- Geographic coordinates
+- Observation time
+- Weather sampling point and region
 
-The ENTSO-E page includes a pie chart showing estimated energy flow into and out of Norway for a selected connection and year, as well as a line chart for selected months.
+The weather data is used for time-series analysis, anomaly detection and visualization.
 
 ## Data Processing and Storage
 
-The project uses the following data pipeline:
+The project uses different tools to collect, process and store data.
 
-1. Retrieve reservoir and electricity flow data from external APIs.
-2. Load and process data using Python and Spark.
-3. Store processed data in Cassandra.
-4. Extract ENTSO-E data from Cassandra using Spark.
-5. Import prepared data into MongoDB.
-6. Load data from MongoDB into Streamlit for interactive visualization.
+The main workflow is:
+
+1. Retrieve data from the NVE, ENTSO-E and Open-Meteo APIs.
+2. Process and prepare the data using Python and Pandas.
+3. Use Apache Spark for data processing where required.
+4. Store energy data in Cassandra.
+5. Extract and transfer prepared data to MongoDB.
+6. Load reservoir and weather data from MongoDB into Streamlit.
+7. Analyse and visualize the data using interactive charts and maps.
+
+## Streamlit Application
+
+The Streamlit application brings the project's datasets and analysis tools together.
+
+It includes the following sections:
+
+### Home
+Introduction to the IND320 project and an overview of the available data.
+
+### Data
+- Data Table
+- ENTSO-E
+- Reservoir Statistics
+- Meteorological Data
+- Currency Rates
+
+### Analysis
+- Plot
+- Time Series Analysis
+- Data Quality Analysis
+- SATV
+- Local Outlier Factor (LOF)
+- Sliding Window Correlation
+
+### Geographic Analysis
+- Interactive Map
+- Norwegian electricity price areas
+- NVE weather regions
+- Reservoir statistics
+
+### Machine Learning
+- Reservoir Forecasting
+- SARIMAX
+- Random Forest
+
+The application uses MongoDB Atlas to load stored data. This reduces its dependence on local CSV files and makes the data available to the deployed Streamlit application.
+
+## Analysis Methods
+
+The project uses several statistical and machine learning methods.
+
+| Method | Purpose |
+|---|---|
+| DCT | Frequency-based analysis of time-series data |
+| SATV | Signal processing and noise reduction |
+| SPC | Statistical process control and anomaly analysis |
+| LOF | Detection of unusual observations |
+| STL | Separating trend, seasonal and residual components |
+| Spectrogram | Studying frequency changes over time |
+| SARIMAX | Time-series forecasting |
+| Random Forest | Machine learning forecasting |
 
 ## Technologies
 
 - Python
-- Pandas and NumPy
+- Pandas
+- NumPy
 - Matplotlib
+- Plotly
 - Streamlit
+- GeoPandas
+- Folium
+- Scikit-learn
+- Statsmodels
 - Jupyter Notebook
+- Open-Meteo API
+- ERA5
 - NVE API
 - ENTSO-E API
 - Apache Spark
 - Apache Cassandra
-- MongoDB
+- MongoDB Atlas
 - Git and GitHub
 
 ## Project Structure
 
+The main project structure is organized as follows:
+
 ```text
 NMBU-IND320/
+│
 ├── Notbook/
-│   └── IND320_project.ipynb
+│   ├── Part1/
+│   ├── Part2/
+│   └── Part3/
+│
 ├── Streamlit-app/
 │   ├── app.py
 │   ├── data_loader.py
-│   ├── load_entsoe_to_cassandra.py
-│   ├── load_entsoe_to_mongodb.py
-│   ├── load_entsoe_export_to_mongodb.py
-│   ├── extract_entsoe_from_cassandra.py
+│   ├── requirements.txt
+│   ├── pyproject.toml
+│   │
 │   └── pages/
+│       ├── home.py
+│       ├── about.py
 │       ├── 1_Data_Table.py
 │       ├── 2_Plot.py
-│       ├── 3_About.py
-│       └── 4_ENTSOE.py
-├── entsoe_data.py
+│       ├── 4_ENTSOE.py
+│       ├── 5_Reservoir_Statistics.py
+│       ├── 6_Meteorological_Data.py
+│       ├── 7_Time_Series_Analysis.py
+│       ├── 8_Data_Quality_Analysis.py
+│       ├── interactive_map.py
+│       ├── forecasting.py
+│       ├── satv.py
+│       ├── lof.py
+│       ├── sliding_window.py
+│       └── currency_rates.py
+│
 ├── load_nve_to_cassandra.py
 ├── export_nve_to_mongodb.py
-├── reservoirs.csv
+├── entsoe_data.py
+├── load_entsoe_to_cassandra.py
+├── load_entsoe_to_mongodb.py
+├── extract_entsoe_from_cassandra.py
+│
 ├── requirements.txt
 ├── pyproject.toml
 ├── uv.lock
 ├── README.md
 └── .gitignore
 ```
+
+*Note: The folder and file names above should match the final structure in the GitHub repository.*
+
+## Running the Streamlit Application
+
+1. Clone the repository:
+
+```bash
+git clone https://github.com/khalidrashed/NMBU-IND320.git
+```
+
+2. Open the project folder:
+
+```bash
+cd NMBU-IND320
+```
+
+3. Install the required dependencies:
+
+```bash
+pip install -r Streamlit-app/requirements.txt
+```
+
+4. Configure the MongoDB connection string using the `MONGODB_URI` environment variable or Streamlit Secrets.
+
+5. Start the application:
+
+```bash
+streamlit run Streamlit-app/app.py
+```
+
+## AI Usage
+
+AI tools were used as support during the project.
+
+They helped with:
+
+- Understanding Python code and error messages
+- Debugging and improving code
+- Explaining statistical and machine learning methods
+- Improving data visualizations
+- Structuring documentation
+- Supporting the development of the Streamlit application
+
+The data processing, analysis, implementation and interpretation were reviewed as part of the project work.
+
+## Conclusion
+
+This project combines energy data, reservoir statistics and weather observations in one data analysis and visualization application.
+
+It demonstrates how APIs, databases, statistical methods and machine learning can be used to explore Norwegian energy-related data and support further analysis and forecasting.
+
+**Course:** IND320 – Data to Decision  
+**University:** Norwegian University of Life Sciences (NMBU)
