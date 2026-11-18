@@ -10,13 +10,12 @@ from sklearn.metrics import mean_absolute_error, mean_squared_error
 
 from statsmodels.tsa.statespace.sarimax import SARIMAX
 
+from data_loader import load_data
+
 # ---------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------
 
-APP_DIR = Path(__file__).resolve().parents[1]
-PROJECT_DIR = APP_DIR.parent
-DATA_PATH = PROJECT_DIR / "Notbook" / "Part4" / "reservoirs.csv"
 
 st.set_page_config(page_title="Reservoir Forecasting", page_icon="📈", layout="wide")
 
@@ -34,19 +33,25 @@ st.write(
 
 @st.cache_data
 def load_reservoir_data():
-    df = pd.read_csv(DATA_PATH)
+    # Shared loader reads from MongoDB: ind320.nve_magasinstatistikk.
+    # It also normalizes the original Norwegian field names to English.
+    df = load_data().copy()
 
-    df = df[df["omrType"].astype(str).str.upper() == "VASS"].copy()
+    required_columns = {"area_type", "date", "fill_ratio", "area_nr"}
+    missing = required_columns.difference(df.columns)
+    if missing:
+        raise ValueError(
+            "MongoDB reservoir data is missing required columns: "
+            + ", ".join(sorted(missing))
+        )
 
-    df["dato_Id"] = pd.to_datetime(df["dato_Id"], errors="coerce")
+    df = df[df["area_type"].astype(str).str.upper() == "VASS"].copy()
+    df["date"] = pd.to_datetime(df["date"], errors="coerce")
+    df["fill_ratio"] = pd.to_numeric(df["fill_ratio"], errors="coerce")
+    df["area_nr"] = pd.to_numeric(df["area_nr"], errors="coerce")
+    df = df.dropna(subset=["date", "fill_ratio", "area_nr"])
 
-    df["fyllingsgrad"] = pd.to_numeric(df["fyllingsgrad"], errors="coerce")
-
-    df["omrnr"] = pd.to_numeric(df["omrnr"], errors="coerce")
-
-    df = df.dropna(subset=["dato_Id", "fyllingsgrad", "omrnr"])
-
-    return df.sort_values("dato_Id")
+    return df.sort_values("date")
 
 
 try:
@@ -81,12 +86,12 @@ def create_calendar_features(index):
 
 
 def prepare_area_data(area_number, history_years):
-    area = data[data["omrnr"] == area_number].copy()
+    area = data[data["area_nr"] == area_number].copy()
 
-    area = area.sort_values("dato_Id")
-    area = area.set_index("dato_Id")
+    area = area.sort_values("date")
+    area = area.set_index("date")
 
-    area = area[["fyllingsgrad"]]
+    area = area[["fill_ratio"]]
 
     latest_date = area.index.max()
 
@@ -97,7 +102,7 @@ def prepare_area_data(area_number, history_years):
     # The source observations are weekly.
     area = area.resample("W-SUN").mean()
 
-    area["fyllingsgrad"] = area["fyllingsgrad"].interpolate(method="time")
+    area["fill_ratio"] = area["fill_ratio"].interpolate(method="time")
 
     return area.dropna()
 
@@ -312,7 +317,7 @@ if len(area_data) < 100:
     )
     st.stop()
 
-series = area_data["fyllingsgrad"]
+series = area_data["fill_ratio"]
 
 
 # ---------------------------------------------------------
@@ -476,7 +481,7 @@ with st.expander("Methodology and limitations"):
 
     **Time resolution:** Weekly observations.
 
-    **Target variable:** Reservoir filling level (`fyllingsgrad`).
+    **Target variable:** Reservoir filling level (`fill_ratio`).
 
     **SARIMAX:** Uses autoregressive, differencing and moving-average
     parameters. Optional calendar variables represent annual seasonality.
