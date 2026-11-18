@@ -207,7 +207,7 @@ sources = [
         "name": "Open-Meteo",
         "description": "Meteorological observations such as temperature and precipitation.",
     },
-    {"name": "Norges Bank", "description": "Exchange-rate data used in the project."},
+    
 ]
 
 for source in sources:
