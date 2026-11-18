@@ -6,9 +6,7 @@ The project focuses on Norwegian reservoir data, electricity flows and weather d
 
 ## Project Links
 
-- **GitHub repository:** https://github.com/khalidrashed/NMBU-IND320
-- **Streamlit application:** https://nmbu-ind320-khalid.streamlit.app/
-- **Part 2 development branch:** https://github.com/khalidrashed/NMBU-IND320/tree/part2-work
+
 
 ## Project Overview
 
