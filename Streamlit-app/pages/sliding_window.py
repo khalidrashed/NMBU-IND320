@@ -1,12 +1,11 @@
 """Part 4: Sliding Window Correlation Analysis."""
 
-import os
+import sys
 from pathlib import Path
 
 import pandas as pd
 import plotly.express as px
 import streamlit as st
-from pymongo import MongoClient
 
 # ==================================================
 # PAGE CONFIGURATION
@@ -20,34 +19,35 @@ st.write(
 )
 
 APP_DIR = Path(__file__).resolve().parents[1]
-PROJECT_DIR = APP_DIR.parent
-PART4_DIR = PROJECT_DIR / "Notbook" / "Part4"
-
-# Reservoir data remains local, as in the original page.
-RESERVOIR_FILE = PART4_DIR / "reservoirs.csv"
+if str(APP_DIR) not in sys.path:
+    sys.path.insert(0, str(APP_DIR))
 
 
 # ==================================================
-# MONGODB CONFIGURATION
+# LOADERS
 # ==================================================
 
-try:
-    from dotenv import load_dotenv
+@st.cache_data(ttl=600)
+def load_weather(region):
+    """Load weather observations from MongoDB Atlas."""
+    import os
 
-    for env_path in (
-        PROJECT_DIR / ".env",
-        APP_DIR / ".env",
-        Path.cwd() / ".env",
-    ):
-        if env_path.exists():
-            load_dotenv(env_path)
-except ImportError:
-    pass
+    from pymongo import MongoClient
 
+    try:
+        from dotenv import load_dotenv
 
-def get_mongodb_uri():
+        for env_path in (
+            APP_DIR.parent / ".env",
+            APP_DIR / ".env",
+            Path.cwd() / ".env",
+        ):
+            if env_path.exists():
+                load_dotenv(env_path, override=False)
+    except ImportError:
+        pass
+
     uri = os.getenv("MONGODB_URI")
-
     if not uri:
         try:
             uri = st.secrets["MONGODB_URI"]
@@ -55,29 +55,14 @@ def get_mongodb_uri():
             uri = None
 
     if not uri:
-        raise ValueError(
-            "MONGODB_URI is missing. Add it to your .env file "
-            "or configure it in Streamlit secrets."
+        raise RuntimeError(
+            "MONGODB_URI is missing. Configure it in Streamlit Secrets "
+            "or in the project .env file."
         )
 
-    return uri
-
-
-# ==================================================
-# LOAD DATA
-# ==================================================
-
-@st.cache_data(ttl=600)
-def load_weather(region):
-    client = None
-
+    client = MongoClient(uri, serverSelectionTimeoutMS=10000)
     try:
-        client = MongoClient(
-            get_mongodb_uri(),
-            serverSelectionTimeoutMS=10000,
-        )
         collection = client["ind320"]["weather_data"]
-
         documents = list(
             collection.find(
                 {"region": region},
@@ -87,87 +72,83 @@ def load_weather(region):
                     "temperature_2m": 1,
                     "precipitation": 1,
                     "point_id": 1,
-                    "latitude": 1,
-                    "longitude": 1,
                     "region": 1,
                 },
             )
         )
+    finally:
+        client.close()
 
-        if not documents:
-            raise ValueError(
-                f"No weather records found in ind320.weather_data "
-                f"for region {region}."
-            )
-
-        df = pd.DataFrame(documents)
-
-        required = {
-            "time",
-            "temperature_2m",
-            "precipitation",
-            "point_id",
-        }
-        missing = required - set(df.columns)
-
-        if missing:
-            raise ValueError(
-                "Weather collection is missing required fields: "
-                + ", ".join(sorted(missing))
-            )
-
-        # MongoDB may return native datetimes or ISO-formatted strings.
-        parsed_time = pd.to_datetime(df["time"], errors="coerce", utc=True)
-        df["time"] = parsed_time.dt.tz_convert(None)
-
-        for column in ["temperature_2m", "precipitation"]:
-            df[column] = pd.to_numeric(df[column], errors="coerce")
-
-        df["point_id"] = pd.to_numeric(df["point_id"], errors="coerce")
-        df = df.dropna(
-            subset=["time", "temperature_2m", "precipitation", "point_id"]
+    if not documents:
+        raise ValueError(
+            f"No weather observations found in ind320.weather_data for {region}."
         )
 
-        return df.sort_values("time").reset_index(drop=True)
-
-    finally:
-        if client is not None:
-            client.close()
-
-
-@st.cache_data
-def load_reservoirs(path):
-    df = pd.read_csv(path)
-
-    required = {
-        "dato_Id",
-        "omrType",
-        "omrnr",
-        "fyllingsgrad",
-        "fylling_TWh",
-    }
-
+    df = pd.DataFrame(documents)
+    required = {"time", "temperature_2m", "precipitation", "point_id"}
     missing = required - set(df.columns)
-
     if missing:
-        raise ValueError(f"Reservoir file is missing columns: {missing}")
+        raise ValueError(
+            "Weather collection is missing fields: "
+            + ", ".join(sorted(missing))
+        )
 
-    df["dato_Id"] = pd.to_datetime(df["dato_Id"], errors="coerce")
+    parsed_time = pd.to_datetime(df["time"], errors="coerce", utc=True)
+    df["time"] = parsed_time.dt.tz_convert(None)
 
-    for column in [
-        "omrnr",
-        "fyllingsgrad",
-        "fylling_TWh",
-    ]:
+    for column in ["temperature_2m", "precipitation", "point_id"]:
         df[column] = pd.to_numeric(df[column], errors="coerce")
 
-    df["omrType"] = df["omrType"].astype(str).str.strip().str.upper()
+    df = df.dropna(
+        subset=["time", "temperature_2m", "precipitation", "point_id"]
+    )
+    return df.sort_values("time").reset_index(drop=True)
 
-    return df.dropna(subset=["dato_Id", "omrnr"])
+
+@st.cache_data(show_spinner="Loading reservoir data from MongoDB…")
+def load_reservoirs():
+    """Use the app's shared data_loader, which reads MongoDB reservoir data."""
+    from data_loader import load_data
+
+    df = load_data().copy()
+
+    # data_loader normalizes the MongoDB field names to English.
+    # The fallback names support older versions of the collection.
+    rename_fallbacks = {
+        "dato_Id": "date",
+        "dato": "date",
+        "omrType": "area_type",
+        "omr_type": "area_type",
+        "omrnr": "area_nr",
+        "omr_nr": "area_nr",
+        "fyllingsgrad": "fill_ratio",
+        "fylling_TWh": "filled_TWh",
+        "fylling_twh": "filled_TWh",
+    }
+    df = df.rename(columns={
+        old: new for old, new in rename_fallbacks.items()
+        if old in df.columns and new not in df.columns
+    })
+
+    required = {"date", "area_type", "area_nr", "fill_ratio", "filled_TWh"}
+    missing = required - set(df.columns)
+    if missing:
+        raise ValueError(
+            "Reservoir data from MongoDB is missing fields: "
+            + ", ".join(sorted(missing))
+        )
+
+    df["date"] = pd.to_datetime(df["date"], errors="coerce")
+    df["area_type"] = df["area_type"].astype(str).str.strip().str.upper()
+
+    for column in ["area_nr", "fill_ratio", "filled_TWh"]:
+        df[column] = pd.to_numeric(df[column], errors="coerce")
+
+    return df.dropna(subset=["date", "area_nr"]).sort_values("date")
 
 
 # ==================================================
-# SIDEBAR SETTINGS
+# SIDEBAR SETTINGS AND DATA LOADING
 # ==================================================
 
 st.sidebar.header("Analysis Settings")
@@ -180,13 +161,7 @@ weather_region = st.sidebar.selectbox(
 
 try:
     weather = load_weather(weather_region)
-
-    if not RESERVOIR_FILE.exists():
-        st.error(f"Reservoir file not found: {RESERVOIR_FILE}")
-        st.stop()
-
-    reservoirs = load_reservoirs(str(RESERVOIR_FILE))
-
+    reservoirs = load_reservoirs()
 except Exception as exc:
     st.error(f"Could not load data: {exc}")
     st.stop()
@@ -206,15 +181,15 @@ weather_variable = st.sidebar.selectbox(
 
 reservoir_variable = st.sidebar.selectbox(
     "Reservoir variable",
-    ["fyllingsgrad", "fylling_TWh"],
+    ["fill_ratio", "filled_TWh"],
     format_func=lambda x: {
-        "fyllingsgrad": "Filling level",
-        "fylling_TWh": "Filled energy (TWh)",
+        "fill_ratio": "Filling level",
+        "filled_TWh": "Filled energy (TWh)",
     }[x],
 )
 
 available_areas = sorted(
-    reservoirs.loc[reservoirs["omrType"] == "VASS", "omrnr"]
+    reservoirs.loc[reservoirs["area_type"] == "VASS", "area_nr"]
     .dropna()
     .astype(int)
     .unique()
@@ -222,7 +197,7 @@ available_areas = sorted(
 )
 
 if not available_areas:
-    st.error("No VASS reservoir areas were found.")
+    st.error("No VASS reservoir areas were found in MongoDB.")
     st.stop()
 
 water_area = st.sidebar.selectbox(
@@ -252,9 +227,6 @@ window_weeks = st.sidebar.slider(
 
 st.subheader("Weather and Reservoir Data")
 
-# Aggregate weather observations across sampling points.
-# First calculate daily means, then weekly means.
-
 weather_daily = (
     weather.groupby(pd.Grouper(key="time", freq="D"))[weather_variable]
     .mean()
@@ -268,9 +240,8 @@ weather_weekly = (
     .mean()
     .rename("weather")
     .reset_index()
+    .dropna()
 )
-
-weather_weekly = weather_weekly.dropna()
 
 
 # ==================================================
@@ -278,7 +249,8 @@ weather_weekly = weather_weekly.dropna()
 # ==================================================
 
 reservoir_area = reservoirs[
-    (reservoirs["omrType"] == "VASS") & (reservoirs["omrnr"] == water_area)
+    (reservoirs["area_type"] == "VASS")
+    & (reservoirs["area_nr"] == water_area)
 ].copy()
 
 if reservoir_area.empty:
@@ -286,7 +258,7 @@ if reservoir_area.empty:
     st.stop()
 
 reservoir_weekly = (
-    reservoir_area.set_index("dato_Id")[reservoir_variable]
+    reservoir_area.set_index("date")[reservoir_variable]
     .resample("W-SUN")
     .mean()
     .rename("reservoir")
@@ -302,7 +274,7 @@ combined = pd.merge(
     weather_weekly,
     reservoir_weekly,
     left_on="time",
-    right_on="dato_Id",
+    right_on="date",
     how="inner",
 )
 
@@ -313,7 +285,10 @@ combined = (
 )
 
 if combined.empty:
-    st.warning("No overlapping observations were found.")
+    st.warning(
+        "No overlapping weekly observations were found between "
+        "the selected weather region and reservoir area."
+    )
     st.stop()
 
 st.caption(
@@ -338,7 +313,6 @@ for lag in range(13):
 
     if len(temp) >= 4:
         correlation = temp[["weather_lagged", "reservoir"]].corr().iloc[0, 1]
-
         lag_results.append(
             {
                 "Lag (weeks)": lag,
@@ -355,7 +329,6 @@ if lag_df.empty:
     st.stop()
 
 valid_lags = lag_df.dropna(subset=["Correlation"])
-
 if valid_lags.empty:
     st.warning("Correlation could not be calculated.")
     st.stop()
@@ -365,7 +338,6 @@ best_lag = int(lag_df.loc[best_index, "Lag (weeks)"])
 best_correlation = float(lag_df.loc[best_index, "Correlation"])
 
 c1, c2 = st.columns(2)
-
 c1.metric("Best lag", f"{best_lag} weeks")
 c2.metric("Best correlation", f"{best_correlation:.3f}")
 
@@ -376,7 +348,6 @@ lag_fig = px.bar(
     hover_data=["Observations"],
     title="Correlation for Different Weather Lags",
 )
-
 lag_fig.add_hline(y=0, line_dash="dash", line_color="gray")
 lag_fig.update_layout(yaxis_range=[-1, 1])
 st.plotly_chart(lag_fig, use_container_width=True)
@@ -404,15 +375,11 @@ if len(analysis) < window_weeks:
 
 analysis["rolling_correlation"] = (
     analysis["weather_lagged"]
-    .rolling(
-        window=window_weeks,
-        min_periods=window_weeks,
-    )
+    .rolling(window=window_weeks, min_periods=window_weeks)
     .corr(analysis["reservoir"])
 )
 
 valid_correlation = analysis["rolling_correlation"].dropna()
-
 if valid_correlation.empty:
     st.warning("No rolling correlations could be calculated.")
     st.stop()
@@ -426,7 +393,6 @@ overall_correlation = analysis[["weather_lagged", "reservoir"]].corr().iloc[0, 1
 latest_correlation = valid_correlation.iloc[-1]
 
 c1, c2, c3 = st.columns(3)
-
 c1.metric("Overall correlation", f"{overall_correlation:.3f}")
 c2.metric("Latest rolling correlation", f"{latest_correlation:.3f}")
 c3.metric("Overlapping weeks", len(analysis))
@@ -443,12 +409,8 @@ fig = px.line(
     x="time",
     y="rolling_correlation",
     title=f"Rolling Correlation: {weather_variable} and {reservoir_variable}",
-    labels={
-        "time": "Date",
-        "rolling_correlation": "Correlation",
-    },
+    labels={"time": "Date", "rolling_correlation": "Correlation"},
 )
-
 fig.add_hline(y=0, line_dash="dash", line_color="gray")
 fig.update_layout(yaxis_range=[-1, 1], hovermode="x unified")
 st.plotly_chart(fig, use_container_width=True)
@@ -473,7 +435,6 @@ fig2 = px.line(
     color="Variable",
     title="Weekly Weather and Reservoir Observations",
 )
-
 fig2.update_layout(hovermode="x unified")
 st.plotly_chart(fig2, use_container_width=True)
 
@@ -500,7 +461,7 @@ st.markdown(f"""
     - Weather region: {weather_region}
     - Weather sampling points: {weather['point_id'].nunique()}
     - Weather variable: {weather_variable}
-    - Reservoir source: Local `reservoirs.csv`
+    - Reservoir source: MongoDB Atlas (`ind320.nve_magasinstatistikk`)
     - Reservoir area: VASS {water_area}
     - Reservoir variable: {reservoir_variable}
     - Time resolution: Weekly
@@ -516,4 +477,5 @@ st.markdown(f"""
     Correlation indicates statistical association and does
     not establish causation.
 """)
+
 
