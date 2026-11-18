@@ -1,5 +1,5 @@
 import os
-from from pathlib import Path
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -373,4 +373,5 @@ with st.expander("Methodology and limitations"):
     but an unusual observation is not necessarily an erroneous
     measurement or a meteorological event.
     """)
+
 
