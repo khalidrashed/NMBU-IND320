@@ -32,7 +32,7 @@ st.set_page_config(
 st.title("🌦️ Meteorological Data")
 st.write(
     "Explore hourly temperature and precipitation "
-    "for the selected electricity area."
+    "for NO3 and RM."
 )
 
 
@@ -94,7 +94,10 @@ REQUIRED_COLUMNS = [
 # 4. LOAD AVAILABLE REGIONS
 # ==================================================
 
-@st.cache_data(show_spinner="Connecting to MongoDB...")
+SUPPORTED_AREAS = ["NO3", "RM"]
+
+
+@st.cache_data(show_spinner="Checking available weather areas...")
 def load_available_regions():
     client = MongoClient(
         MONGODB_URI,
@@ -102,10 +105,11 @@ def load_available_regions():
     )
     try:
         collection = client[DATABASE_NAME][COLLECTION_NAME]
-        regions = collection.distinct("region")
-        return sorted(
-            [str(region) for region in regions if region is not None]
+        regions = collection.distinct(
+            "region",
+            {"region": {"$in": SUPPORTED_AREAS}},
         )
+        return [area for area in SUPPORTED_AREAS if area in regions]
     finally:
         client.close()
 
@@ -118,7 +122,7 @@ except Exception as error:
 
 if not available_areas:
     st.error(
-        f"No regions were found in "
+        "Neither NO3 nor RM was found in "
         f"{DATABASE_NAME}.{COLLECTION_NAME}."
     )
     st.stop()
@@ -466,6 +470,7 @@ with st.expander("About this dataset"):
         averaged for each timestamp.
         """
     )
+
 
 
 
