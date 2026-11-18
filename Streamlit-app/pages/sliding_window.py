@@ -1,10 +1,12 @@
 """Part 4: Sliding Window Correlation Analysis."""
 
+import os
 from pathlib import Path
 
 import pandas as pd
 import plotly.express as px
 import streamlit as st
+from pymongo import MongoClient
 
 # ==================================================
 # PAGE CONFIGURATION
@@ -21,43 +23,120 @@ APP_DIR = Path(__file__).resolve().parents[1]
 PROJECT_DIR = APP_DIR.parent
 PART4_DIR = PROJECT_DIR / "Notbook" / "Part4"
 
-WEATHER_FILE = PART4_DIR / "RM_weather_2024.csv"
+# Reservoir data remains local, as in the original page.
 RESERVOIR_FILE = PART4_DIR / "reservoirs.csv"
+
+
+# ==================================================
+# MONGODB CONFIGURATION
+# ==================================================
+
+try:
+    from dotenv import load_dotenv
+
+    for env_path in (
+        PROJECT_DIR / ".env",
+        APP_DIR / ".env",
+        Path.cwd() / ".env",
+    ):
+        if env_path.exists():
+            load_dotenv(env_path)
+except ImportError:
+    pass
+
+
+def get_mongodb_uri():
+    uri = os.getenv("MONGODB_URI")
+
+    if not uri:
+        try:
+            uri = st.secrets["MONGODB_URI"]
+        except Exception:
+            uri = None
+
+    if not uri:
+        raise ValueError(
+            "MONGODB_URI is missing. Add it to your .env file "
+            "or configure it in Streamlit secrets."
+        )
+
+    return uri
 
 
 # ==================================================
 # LOAD DATA
 # ==================================================
 
+@st.cache_data(ttl=600)
+def load_weather(region):
+    client = None
 
-@st.cache_data
-def load_weather(path):
+    try:
+        client = MongoClient(
+            get_mongodb_uri(),
+            serverSelectionTimeoutMS=10000,
+        )
+        collection = client["ind320"]["weather_data"]
 
-    df = pd.read_csv(path)
+        documents = list(
+            collection.find(
+                {"region": region},
+                {
+                    "_id": 0,
+                    "time": 1,
+                    "temperature_2m": 1,
+                    "precipitation": 1,
+                    "point_id": 1,
+                    "latitude": 1,
+                    "longitude": 1,
+                    "region": 1,
+                },
+            )
+        )
 
-    required = {
-        "time",
-        "temperature_2m",
-        "precipitation",
-        "point_id",
-    }
+        if not documents:
+            raise ValueError(
+                f"No weather records found in ind320.weather_data "
+                f"for region {region}."
+            )
 
-    missing = required - set(df.columns)
+        df = pd.DataFrame(documents)
 
-    if missing:
-        raise ValueError(f"Weather file is missing columns: {missing}")
+        required = {
+            "time",
+            "temperature_2m",
+            "precipitation",
+            "point_id",
+        }
+        missing = required - set(df.columns)
 
-    df["time"] = pd.to_datetime(df["time"], errors="coerce")
+        if missing:
+            raise ValueError(
+                "Weather collection is missing required fields: "
+                + ", ".join(sorted(missing))
+            )
 
-    for column in ["temperature_2m", "precipitation"]:
-        df[column] = pd.to_numeric(df[column], errors="coerce")
+        # MongoDB may return native datetimes or ISO-formatted strings.
+        parsed_time = pd.to_datetime(df["time"], errors="coerce", utc=True)
+        df["time"] = parsed_time.dt.tz_convert(None)
 
-    return df.dropna(subset=["time"])
+        for column in ["temperature_2m", "precipitation"]:
+            df[column] = pd.to_numeric(df[column], errors="coerce")
+
+        df["point_id"] = pd.to_numeric(df["point_id"], errors="coerce")
+        df = df.dropna(
+            subset=["time", "temperature_2m", "precipitation", "point_id"]
+        )
+
+        return df.sort_values("time").reset_index(drop=True)
+
+    finally:
+        if client is not None:
+            client.close()
 
 
 @st.cache_data
 def load_reservoirs(path):
-
     df = pd.read_csv(path)
 
     required = {
@@ -88,33 +167,33 @@ def load_reservoirs(path):
 
 
 # ==================================================
-# FILE VALIDATION
-# ==================================================
-
-if not WEATHER_FILE.exists():
-    st.error(f"Weather file not found: {WEATHER_FILE}")
-    st.stop()
-
-if not RESERVOIR_FILE.exists():
-    st.error(f"Reservoir file not found: {RESERVOIR_FILE}")
-    st.stop()
-
-try:
-
-    weather = load_weather(str(WEATHER_FILE))
-    reservoirs = load_reservoirs(str(RESERVOIR_FILE))
-
-except Exception as exc:
-
-    st.error(f"Could not load data: {exc}")
-    st.stop()
-
-
-# ==================================================
 # SIDEBAR SETTINGS
 # ==================================================
 
 st.sidebar.header("Analysis Settings")
+
+weather_region = st.sidebar.selectbox(
+    "Weather region",
+    ["RM", "NO3"],
+    index=0,
+)
+
+try:
+    weather = load_weather(weather_region)
+
+    if not RESERVOIR_FILE.exists():
+        st.error(f"Reservoir file not found: {RESERVOIR_FILE}")
+        st.stop()
+
+    reservoirs = load_reservoirs(str(RESERVOIR_FILE))
+
+except Exception as exc:
+    st.error(f"Could not load data: {exc}")
+    st.stop()
+
+if weather.empty:
+    st.warning(f"No valid weather observations are available for {weather_region}.")
+    st.stop()
 
 weather_variable = st.sidebar.selectbox(
     "Weather variable",
@@ -238,6 +317,7 @@ if combined.empty:
     st.stop()
 
 st.caption(
+    f"Weather region: {weather_region} | "
     f"Analysis period: {combined['time'].min().date()} "
     f"to {combined['time'].max().date()}"
 )
@@ -252,15 +332,11 @@ st.subheader("Automatic Lag Comparison")
 lag_results = []
 
 for lag in range(13):
-
     temp = combined[["time", "weather", "reservoir"]].copy()
-
     temp["weather_lagged"] = temp["weather"].shift(lag)
-
     temp = temp.dropna(subset=["weather_lagged", "reservoir"])
 
     if len(temp) >= 4:
-
         correlation = temp[["weather_lagged", "reservoir"]].corr().iloc[0, 1]
 
         lag_results.append(
@@ -285,22 +361,13 @@ if valid_lags.empty:
     st.stop()
 
 best_index = valid_lags["Absolute correlation"].idxmax()
-
 best_lag = int(lag_df.loc[best_index, "Lag (weeks)"])
-
 best_correlation = float(lag_df.loc[best_index, "Correlation"])
 
 c1, c2 = st.columns(2)
 
-c1.metric(
-    "Best lag",
-    f"{best_lag} weeks",
-)
-
-c2.metric(
-    "Best correlation",
-    f"{best_correlation:.3f}",
-)
+c1.metric("Best lag", f"{best_lag} weeks")
+c2.metric("Best correlation", f"{best_correlation:.3f}")
 
 lag_fig = px.bar(
     lag_df,
@@ -310,20 +377,9 @@ lag_fig = px.bar(
     title="Correlation for Different Weather Lags",
 )
 
-lag_fig.add_hline(
-    y=0,
-    line_dash="dash",
-    line_color="gray",
-)
-
-lag_fig.update_layout(
-    yaxis_range=[-1, 1],
-)
-
-st.plotly_chart(
-    lag_fig,
-    use_container_width=True,
-)
+lag_fig.add_hline(y=0, line_dash="dash", line_color="gray")
+lag_fig.update_layout(yaxis_range=[-1, 1])
+st.plotly_chart(lag_fig, use_container_width=True)
 
 
 # ==================================================
@@ -331,9 +387,7 @@ st.plotly_chart(
 # ==================================================
 
 analysis = combined.copy()
-
 analysis["weather_lagged"] = analysis["weather"].shift(lag_weeks)
-
 analysis = analysis.dropna(subset=["weather_lagged", "reservoir"]).copy()
 
 if len(analysis) < window_weeks:
@@ -369,25 +423,13 @@ if valid_correlation.empty:
 # ==================================================
 
 overall_correlation = analysis[["weather_lagged", "reservoir"]].corr().iloc[0, 1]
-
 latest_correlation = valid_correlation.iloc[-1]
 
 c1, c2, c3 = st.columns(3)
 
-c1.metric(
-    "Overall correlation",
-    f"{overall_correlation:.3f}",
-)
-
-c2.metric(
-    "Latest rolling correlation",
-    f"{latest_correlation:.3f}",
-)
-
-c3.metric(
-    "Overlapping weeks",
-    len(analysis),
-)
+c1.metric("Overall correlation", f"{overall_correlation:.3f}")
+c2.metric("Latest rolling correlation", f"{latest_correlation:.3f}")
+c3.metric("Overlapping weeks", len(analysis))
 
 
 # ==================================================
@@ -400,28 +442,16 @@ fig = px.line(
     analysis,
     x="time",
     y="rolling_correlation",
-    title=(f"Rolling Correlation: " f"{weather_variable} and {reservoir_variable}"),
+    title=f"Rolling Correlation: {weather_variable} and {reservoir_variable}",
     labels={
         "time": "Date",
         "rolling_correlation": "Correlation",
     },
 )
 
-fig.add_hline(
-    y=0,
-    line_dash="dash",
-    line_color="gray",
-)
-
-fig.update_layout(
-    yaxis_range=[-1, 1],
-    hovermode="x unified",
-)
-
-st.plotly_chart(
-    fig,
-    use_container_width=True,
-)
+fig.add_hline(y=0, line_dash="dash", line_color="gray")
+fig.update_layout(yaxis_range=[-1, 1], hovermode="x unified")
+st.plotly_chart(fig, use_container_width=True)
 
 
 # ==================================================
@@ -444,14 +474,8 @@ fig2 = px.line(
     title="Weekly Weather and Reservoir Observations",
 )
 
-fig2.update_layout(
-    hovermode="x unified",
-)
-
-st.plotly_chart(
-    fig2,
-    use_container_width=True,
-)
+fig2.update_layout(hovermode="x unified")
+st.plotly_chart(fig2, use_container_width=True)
 
 
 # ==================================================
@@ -459,18 +483,10 @@ st.plotly_chart(
 # ==================================================
 
 with st.expander("View analysis data"):
-
-    st.dataframe(
-        analysis,
-        use_container_width=True,
-    )
+    st.dataframe(analysis, use_container_width=True)
 
 with st.expander("View automatic lag comparison"):
-
-    st.dataframe(
-        lag_df,
-        use_container_width=True,
-    )
+    st.dataframe(lag_df, use_container_width=True)
 
 
 # ==================================================
@@ -480,9 +496,11 @@ with st.expander("View automatic lag comparison"):
 st.subheader("Methodology")
 
 st.markdown(f"""
-    - Weather region: RM
+    - Weather source: MongoDB Atlas (`ind320.weather_data`)
+    - Weather region: {weather_region}
     - Weather sampling points: {weather['point_id'].nunique()}
     - Weather variable: {weather_variable}
+    - Reservoir source: Local `reservoirs.csv`
     - Reservoir area: VASS {water_area}
     - Reservoir variable: {reservoir_variable}
     - Time resolution: Weekly
@@ -497,4 +515,5 @@ st.markdown(f"""
 
     Correlation indicates statistical association and does
     not establish causation.
-    """)
+""")
+
