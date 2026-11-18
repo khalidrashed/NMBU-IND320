@@ -2,63 +2,36 @@
 """
 Data loading and caching for the IND320 Streamlit app.
 
-Loads reservoir data from reservoirs.csv,
-renames columns to English, parses dates,
-converts numerical columns and caches the result.
+Loads reservoir data from MongoDB Atlas, renames columns to English,
+parses dates and caches the result.
 """
 
+import os
 from pathlib import Path
 
 import pandas as pd
 import streamlit as st
+from dotenv import load_dotenv
+from pymongo import MongoClient
 
-
-# ==================================================
-# 1. PROJECT PATHS
-# ==================================================
-
+# Find the project root and load its .env file.
 _HERE = Path(__file__).resolve().parent
 _PROJECT_ROOT = _HERE.parent
-
-# Search for reservoirs.csv in the original locations
-_CANDIDATES = [
-    _HERE / "reservoirs.csv",
-    _PROJECT_ROOT / "reservoirs.csv",
-    _PROJECT_ROOT / "Notebook" / "reservoirs.csv",
-    _PROJECT_ROOT / "Notbook" / "reservoirs.csv",
-    _PROJECT_ROOT / "data" / "reservoirs.csv",
-    _PROJECT_ROOT / "Notbook" / "data" / "reservoirs.csv",
-]
-
-
-# ==================================================
-# 2. COLUMN RENAMING
-# ==================================================
+load_dotenv(_PROJECT_ROOT / ".env", override=False)
 
 RENAME_MAP = {
-    "dato_Id": "date",
     "dato": "date",
-    "omrType": "area_type",
     "omr_type": "area_type",
-    "omrnr": "area_nr",
     "omr_nr": "area_nr",
     "iso_aar": "iso_year",
     "iso_uke": "iso_week",
     "fyllingsgrad": "fill_ratio",
-    "kapasitet_TWh": "capacity_TWh",
     "kapasitet_twh": "capacity_TWh",
-    "fylling_TWh": "filled_TWh",
     "fylling_twh": "filled_TWh",
-    "neste_Publiseringsdato": "next_publication",
     "neste_publiseringsdato": "next_publication",
     "fyllingsgrad_forrige_uke": "fill_ratio_prev_week",
     "endring_fyllingsgrad": "fill_ratio_change",
 }
-
-
-# ==================================================
-# 3. NUMERICAL COLUMNS
-# ==================================================
 
 NUMERIC_COLS = [
     "fill_ratio",
@@ -69,78 +42,72 @@ NUMERIC_COLS = [
 ]
 
 
-# ==================================================
-# 4. FIND CSV FILE
-# ==================================================
-
-def csv_path() -> Path:
-    """
-    Find reservoirs.csv in the project directories.
-    """
-
-    for path in _CANDIDATES:
-        if path.is_file():
-            return path
-
-    searched_paths = "\n".join(
-        str(path) for path in _CANDIDATES
-    )
-
-    raise FileNotFoundError(
-        "Could not find reservoirs.csv.\n"
-        "Searched locations:\n"
-        f"{searched_paths}"
-    )
-
-
-# ==================================================
-# 5. LOAD AND CACHE DATA
-# ==================================================
-
-@st.cache_data(show_spinner="Loading reservoir data...")
+@st.cache_data(show_spinner="Loading reservoir data from MongoDB...")
 def load_data() -> pd.DataFrame:
-    """
-    Load, clean and cache reservoir data from CSV.
-    """
+    """Load, clean and cache reservoir data from MongoDB."""
 
-    path = csv_path()
+    uri = os.getenv("MONGODB_URI")
 
-    df = pd.read_csv(path)
+    if not uri:
+        raise RuntimeError(
+            "MONGODB_URI is missing. Check the .env file in the project root."
+        )
 
-    # Rename columns to English
-    df = df.rename(
+    client = MongoClient(
+        uri,
+        serverSelectionTimeoutMS=10000
+    )
+
+    try:
+        collection = client["ind320"]["nve_magasinstatistikk"]
+
+        documents = list(
+            collection.find({}, {"_id": 0})
+        )
+
+    finally:
+        client.close()
+
+    if not documents:
+        raise RuntimeError(
+            "No documents found in MongoDB collection "
+            "ind320.nve_magasinstatistikk."
+        )
+
+    df = pd.DataFrame(documents).rename(
         columns=RENAME_MAP
     ).copy()
 
-    # Parse dates
     if "date" in df.columns:
         df["date"] = pd.to_datetime(
             df["date"],
-            errors="coerce"
+            errors="coerce",
+            format="mixed"
         )
 
     if "next_publication" in df.columns:
         df["next_publication"] = pd.to_datetime(
             df["next_publication"],
-            errors="coerce"
+            errors="coerce",
+            format="mixed"
         )
 
-    # Convert numerical columns
     for column in NUMERIC_COLS:
-
         if column in df.columns:
-
             df[column] = pd.to_numeric(
                 df[column],
                 errors="coerce"
             )
 
-    # Sort by date
     if "date" in df.columns:
-
-        df = (
-            df.sort_values("date")
-            .reset_index(drop=True)
-        )
+        df = df.sort_values(
+            "date"
+        ).reset_index(drop=True)
 
     return df
+
+
+def csv_path() -> Path:
+    """Kept for compatibility with existing app code."""
+    return _HERE / "reservoirs.csv"
+
