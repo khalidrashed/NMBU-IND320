@@ -66,13 +66,13 @@ col1, col2 = st.columns(2)
 
 with col1:
     st.markdown("""
-    ### 📊 Part 1 – Dashboard Basics
+    ### 📊  – Dashboard Basics
 
     - Reservoir Data Table
     - Reservoir Plots
     - Reservoir Statistics
 
-    ### ⚡ Part 2 – Data Sources
+    ### ⚡  – Data Sources
 
     - ENTSO-E Energy Data
     - Currency Rates
@@ -81,7 +81,7 @@ with col1:
 
 with col2:
     st.markdown("""
-    ### 🌦️ Part 3 – Data Quality
+    ### 🌦️  – Data Quality
 
     - Meteorological Data
     - Time Series Analysis
