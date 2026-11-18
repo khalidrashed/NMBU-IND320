@@ -133,4 +133,3 @@ pages = {
 navigation = st.navigation(pages)
 
 navigation.run()
-

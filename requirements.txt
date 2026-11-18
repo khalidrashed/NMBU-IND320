@@ -3,3 +3,12 @@ pandas
 numpy
 plotly
 requests
+python-dotenv
+pymongo
+pyspark
+scipy
+scikit-learn
+statsmodels
+streamlit-folium
+folium
+geopandas
