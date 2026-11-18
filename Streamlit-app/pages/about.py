@@ -36,7 +36,7 @@ st.header("Project Overview")
 col1, col2, col3, col4 = st.columns(4)
 
 with col1:
-    st.metric("Project Parts", "4")
+    st.metric("Project Parts", "3")
 
 with col2:
     st.metric("Main Programming Language", "Python")
