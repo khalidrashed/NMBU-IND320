@@ -1,9 +1,11 @@
-from pathlib import Path
+import os
+from from pathlib import Path
 
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
+from pymongo import MongoClient
 
 from sklearn.neighbors import LocalOutlierFactor
 from sklearn.preprocessing import StandardScaler
@@ -11,11 +13,6 @@ from sklearn.preprocessing import StandardScaler
 # ---------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------
-
-APP_DIR = Path(__file__).resolve().parents[1]
-PROJECT_DIR = APP_DIR.parent
-
-DATA_PATH = PROJECT_DIR / "Notbook" / "Part4" / "RM_weather_2024.csv"
 
 st.title("🔎 Local Outlier Factor (LOF)")
 st.write(
@@ -25,43 +22,122 @@ st.write(
 
 
 # ---------------------------------------------------------
-# Load data
+# MongoDB configuration
 # ---------------------------------------------------------
 
+try:
+    from dotenv import load_dotenv
 
-@st.cache_data
+    # Search common project locations for the local .env file.
+    current_dir = Path(__file__).resolve().parent
+    for env_path in (
+        current_dir / ".env",
+        current_dir.parent / ".env",
+        current_dir.parent.parent / ".env",
+        Path.cwd() / ".env",
+    ):
+        if env_path.exists():
+            load_dotenv(env_path)
+except ImportError:
+    pass
+
+
+def get_mongodb_uri():
+    uri = os.getenv("MONGODB_URI")
+
+    if not uri:
+        try:
+            uri = st.secrets["MONGODB_URI"]
+        except Exception:
+            uri = None
+
+    if not uri:
+        raise ValueError(
+            "MONGODB_URI is missing. Add it to your .env file "
+            "or configure it in Streamlit secrets."
+        )
+
+    return uri
+
+
+# ---------------------------------------------------------
+# Load data from MongoDB Atlas
+# ---------------------------------------------------------
+
+@st.cache_data(ttl=600)
 def load_weather_data():
-    if not DATA_PATH.exists():
-        raise FileNotFoundError(f"Weather data file not found: {DATA_PATH}")
+    client = None
 
-    df = pd.read_csv(DATA_PATH)
+    try:
+        client = MongoClient(
+            get_mongodb_uri(),
+            serverSelectionTimeoutMS=10000,
+        )
+        collection = client["ind320"]["weather_data"]
 
-    required_columns = {
-        "time",
-        "temperature_2m",
-        "precipitation",
-    }
+        documents = list(
+            collection.find(
+                {"region": {"$in": ["NO3", "RM"]}},
+                {
+                    "_id": 0,
+                    "time": 1,
+                    "temperature_2m": 1,
+                    "precipitation": 1,
+                    "point_id": 1,
+                    "latitude": 1,
+                    "longitude": 1,
+                    "region": 1,
+                },
+            )
+        )
 
-    missing = required_columns - set(df.columns)
+        if not documents:
+            raise ValueError(
+                "No weather records found in ind320.weather_data "
+                "for regions NO3 or RM."
+            )
 
-    if missing:
-        raise ValueError(f"Missing columns: {', '.join(sorted(missing))}")
+        df = pd.DataFrame(documents)
 
-    df["time"] = pd.to_datetime(df["time"], errors="coerce")
+        required_columns = {
+            "time",
+            "temperature_2m",
+            "precipitation",
+            "region",
+        }
+        missing = required_columns - set(df.columns)
+        if missing:
+            raise ValueError(
+                f"MongoDB weather data is missing columns: {', '.join(sorted(missing))}"
+            )
 
-    for column in ["temperature_2m", "precipitation"]:
-        df[column] = pd.to_numeric(df[column], errors="coerce")
+        # Support MongoDB datetime values and ISO-formatted strings.
+        parsed_time = pd.to_datetime(df["time"], errors="coerce", utc=True)
+        df["time"] = parsed_time.dt.tz_convert(None)
 
-    df = df.dropna(subset=["time", "temperature_2m", "precipitation"])
+        for column in ["temperature_2m", "precipitation"]:
+            df[column] = pd.to_numeric(df[column], errors="coerce")
 
-    return df.sort_values("time")
+        df["region"] = df["region"].astype(str).str.upper()
+        df = df[df["region"].isin(["NO3", "RM"])]
+        df = df.dropna(
+            subset=["time", "temperature_2m", "precipitation"]
+        )
+
+        if df.empty:
+            raise ValueError("No valid weather observations are available.")
+
+        return df.sort_values("time").reset_index(drop=True)
+
+    finally:
+        if client is not None:
+            client.close()
 
 
 try:
     weather = load_weather_data()
-
 except Exception as exc:
-    st.error(f"Could not load weather data: {exc}")
+    st.error(f"Could not load weather data from MongoDB: {exc}")
     st.stop()
 
 
@@ -75,6 +151,12 @@ if weather.empty:
 # ---------------------------------------------------------
 
 st.sidebar.header("LOF settings")
+
+available_regions = sorted(weather["region"].dropna().unique().tolist())
+selected_region = st.sidebar.selectbox(
+    "Weather dataset",
+    ["All datasets"] + available_regions,
+)
 
 weather_variable = st.sidebar.selectbox(
     "Meteorological property",
@@ -111,9 +193,12 @@ run_analysis = st.sidebar.button("Detect outliers", type="primary")
 # Prepare data
 # ---------------------------------------------------------
 
-analysis_data = weather[["time", weather_variable]].copy()
+if selected_region != "All datasets":
+    weather = weather[weather["region"] == selected_region].copy()
 
+analysis_data = weather[["time", weather_variable]].copy()
 analysis_data = analysis_data.sort_values("time")
+analysis_data = analysis_data.dropna(subset=[weather_variable])
 
 if len(analysis_data) > max_observations:
     analysis_data = analysis_data.sample(
@@ -122,14 +207,16 @@ if len(analysis_data) > max_observations:
 
 values = analysis_data[[weather_variable]].to_numpy()
 
+if analysis_data.empty:
+    st.warning("No valid observations are available for the selected dataset and variable.")
+    st.stop()
+
 st.subheader("Weather data overview")
 
 col1, col2, col3 = st.columns(3)
 
 col1.metric("Observations", f"{len(analysis_data):,}")
-
 col2.metric("Mean", f"{analysis_data[weather_variable].mean():.2f}")
-
 col3.metric("Standard deviation", f"{analysis_data[weather_variable].std():.2f}")
 
 
@@ -175,19 +262,17 @@ if run_analysis:
         with st.spinner("Detecting unusual observations..."):
 
             scaler = StandardScaler()
-
             scaled_values = scaler.fit_transform(values)
 
             lof_model = LocalOutlierFactor(
-                n_neighbors=n_neighbors, contamination=contamination
+                n_neighbors=n_neighbors,
+                contamination=contamination,
             )
 
             predictions = lof_model.fit_predict(scaled_values)
-
             scores = lof_model.negative_outlier_factor_
 
             results = analysis_data.copy()
-
             results["outlier"] = predictions == -1
             results["lof_score"] = scores
 
@@ -195,22 +280,16 @@ if run_analysis:
 
         # Metrics
         outliers = results[results["outlier"]].copy()
-
         outlier_count = len(outliers)
-
         outlier_percentage = outlier_count / len(results) * 100
 
         c1, c2, c3 = st.columns(3)
-
         c1.metric("Detected outliers", f"{outlier_count:,}")
-
         c2.metric("Outlier percentage", f"{outlier_percentage:.2f}%")
-
         c3.metric("Normal observations", f"{len(results) - outlier_count:,}")
 
         # Plot results
         fig = go.Figure()
-
         normal = results[~results["outlier"]]
 
         fig.add_trace(
@@ -244,8 +323,10 @@ if run_analysis:
 
         # Outlier table
         st.subheader("Detected unusual observations")
-
-        st.dataframe(outliers.sort_values("lof_score"), use_container_width=True)
+        st.dataframe(
+            outliers.sort_values("lof_score"),
+            use_container_width=True,
+        )
 
         # Download
         st.download_button(
@@ -264,9 +345,13 @@ if run_analysis:
 # ---------------------------------------------------------
 
 with st.expander("Methodology and limitations"):
-
     st.markdown("""
     **Algorithm:** Local Outlier Factor (LOF).
+
+    **Data source:** MongoDB Atlas, database `ind320`,
+    collection `weather_data`.
+
+    **Available datasets:** NO3 and RM.
 
     **Input:** Selected meteorological variable.
 
