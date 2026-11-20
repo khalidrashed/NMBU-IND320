@@ -36,7 +36,7 @@ st.header("Project Overview")
 col1, col2, col3, col4 = st.columns(4)
 
 with col1:
-    st.metric("Project Parts", "3")
+    st.metric("Project Parts", "4")
 
 with col2:
     st.metric("Main Programming Language", "Python")
@@ -187,6 +187,83 @@ with st.expander("Explore Part 3"):
     """)
 
 
+# --------------------------------------------------
+# Part 4
+# --------------------------------------------------
+
+st.header("Part 4 – Machine Learning and Forecasting")
+
+st.markdown("""
+The fourth part focuses on extending the Streamlit application
+with interactive analysis, correlation methods and forecasting.
+
+The main objective is to investigate how meteorological and
+historical reservoir data can support the prediction of
+future reservoir filling levels.
+""")
+
+with st.expander("Explore Part 4"):
+
+    st.markdown("""
+    **Main activities:**
+
+    **1. Interactive map and area selection**
+
+    - Converted geographical shapefiles to GeoJSON.
+    - Developed an interactive map using Folium.
+    - Added electricity-area and weather-region selection.
+    - Displayed water-area statistics.
+    - Stored selected areas using Streamlit session state.
+
+    **2. Meteorological analysis**
+
+    - Added selectable weather properties to SATV.
+    - Added temperature and precipitation selection to LOF.
+    - Used Local Outlier Factor to identify unusual observations.
+
+    **3. Sliding Window Correlation**
+
+    - Implemented selectable lag and window length.
+    - Compared meteorological variables with reservoir filling.
+    - Visualized rolling correlations using Plotly.
+    - Investigated how time shifts affect correlations.
+
+    **4. Reservoir forecasting**
+
+    - Implemented SARIMAX forecasting.
+    - Implemented Random Forest forecasting.
+    - Added selectable VASS water areas.
+    - Added configurable training periods and forecast horizons.
+    - Included calendar-based exogenous variables.
+    - Evaluated models using MAE and RMSE.
+    - Added confidence intervals for SARIMAX.
+
+    **5. Application improvements**
+
+    - Added caching to improve performance.
+    - Used progress indicators during model execution.
+    - Added error handling for data loading and model execution.
+
+    **Technologies:**
+
+    - Python
+    - Pandas
+    - Scikit-learn
+    - Statsmodels
+    - Plotly
+    - Folium
+    - Streamlit
+
+    **Outcome:**
+
+    An extended interactive application for geographical
+    exploration, meteorological analysis, anomaly detection,
+    correlation analysis and reservoir forecasting.
+    """)
+
+
+st.divider()
+
 
 # --------------------------------------------------
 # Data sources
@@ -207,7 +284,7 @@ sources = [
         "name": "Open-Meteo",
         "description": "Meteorological observations such as temperature and precipitation.",
     },
-    
+    {"name": "Norges Bank", "description": "Exchange-rate data used in the project."},
 ]
 
 for source in sources:
@@ -267,3 +344,4 @@ st.caption(
     "Project documentation and application developed as part "
     "of the IND320 course at NMBU."
 )
+
