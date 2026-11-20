@@ -11,10 +11,10 @@ st.markdown("""
 Welcome to the **IND320 Energy Dashboard**.
 
 This application combines energy market data, reservoir statistics,
-meteorological observations and data quality analysis.
+meteorological observations and machine learning tools.
 
-Use the navigation menu to explore the available datasets
-and perform exploratory analysis.
+Use the navigation menu to explore the available datasets,
+perform exploratory analysis and investigate forecasting methods.
 """)
 
 st.divider()
@@ -57,7 +57,7 @@ except Exception as error:
 st.divider()
 
 # --------------------------------------------------
-# Main application sections: Parts 1, 2 and 3 only
+# Main application sections
 # --------------------------------------------------
 
 st.subheader("Application Sections")
@@ -66,31 +66,35 @@ col1, col2 = st.columns(2)
 
 with col1:
     st.markdown("""
-    ### 📊  – Dashboard Basics
+    ### 📊 Data Overview
 
-    - Reservoir Data Table
-    - Reservoir Plots
     - Reservoir Statistics
-
-    ### ⚡  – Data Sources
-
     - ENTSO-E Energy Data
-    - MongoDB Data
+    - Meteorological Data
+    - Currency Rates
+
+    ### 📈 Exploratory Analysis
+
+    - Time Series Analysis
+    - SATV
+    - Local Outlier Factor (LOF)
+    - Data Quality Analysis
     """)
 
 with col2:
     st.markdown("""
-    ### 🌦️  – Data Quality
+    ### 🗺️ Geographic Analysis
 
-    - Meteorological Data
-    - Time Series Analysis
-    - Data Quality Analysis
-    - Local Outlier Factor (LOF)
-    - Sliding Window Correlation
+    - Interactive GeoJSON Map
+    - Price and Water Areas
+    - Weather Data Visualization
 
-    ### 🗺️ Shared Tools
+    ### 🔮 Predictive Analysis
 
-    - Interactive Map
+    - Reservoir Forecasting
+    - SARIMAX
+    - Machine Learning
+    - Exogenous Variables
     """)
 
 st.divider()
@@ -106,13 +110,13 @@ This dashboard was developed as part of the IND320 project
 at the Norwegian University of Life Sciences (NMBU).
 
 It brings together energy data, reservoir information,
-weather observations and data quality analysis in one
-interactive application.
+weather observations, data visualisation and machine learning
+in one interactive application.
 """)
 
 st.info(
     "Select a page from the navigation menu on the left "
-    "to explore Parts 1, 2 and 3."
+    "to explore the different features."
 )
 
 # --------------------------------------------------
@@ -121,6 +125,8 @@ st.info(
 
 st.divider()
 
-st.caption("IND320 – Energy Data Analysis | NMBU")
+st.caption("IND320 – Energy Data Analysis and Machine Learning | NMBU")
+
+
 
 
