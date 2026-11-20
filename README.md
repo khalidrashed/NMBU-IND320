@@ -344,5 +344,5 @@ Across its four parts, the project demonstrates how APIs, databases, statistical
 
 The project also provides practical experience with data engineering, time-series analysis, interactive visualization and predictive modelling.
 
-**Course:** IND320 – Data to Decision  
+**Course:** IND320 – Data to Decision, Student Khalid Rashed 
 **University:** Norwegian University of Life Sciences (NMBU)
