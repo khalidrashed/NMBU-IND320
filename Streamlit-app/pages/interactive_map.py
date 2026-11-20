@@ -24,9 +24,8 @@ APP_DIR = Path(__file__).resolve().parents[1]
 PROJECT_DIR = APP_DIR.parent
 DATA_DIR = PROJECT_DIR / "Notbook" / "Part3"
 
-PRICE_GEOJSON = (
-    DATA_DIR / "shapefiles" / "electricity_areas" / "electricity_areas_wgs84.geojson"
-)
+# Electricity-area GeoJSON is stored directly in the project root.
+PRICE_GEOJSON = PROJECT_DIR / "electricity_areas_wgs84.geojson"
 
 WEATHER_GEOJSON = (
     DATA_DIR / "shapefiles" / "precipitation_areas" / "nve_regions.geojson"
@@ -494,4 +493,10 @@ else:
             st.metric(
                 reservoir_variable,
                 f"{selected_value.iloc[0]:.3f}",
-            )
+            ) 
+
+
+
+
+  
+
