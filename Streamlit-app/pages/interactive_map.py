@@ -24,11 +24,21 @@ APP_DIR = Path(__file__).resolve().parents[1]
 PROJECT_DIR = APP_DIR.parent
 DATA_DIR = PROJECT_DIR / "Notbook" / "Part3"
 
-# Electricity-area GeoJSON is stored directly in the project root.
-PRICE_GEOJSON = PROJECT_DIR / "electricity_areas_wgs84.geojson"
+# Both GeoJSON files are located in:
+# shapefiles/electricity_areas/
+
+PRICE_GEOJSON = (
+    PROJECT_DIR
+    / "shapefiles"
+    / "electricity_areas"
+    / "electricity_areas_wgs84.geojson"
+)
 
 WEATHER_GEOJSON = (
-    DATA_DIR / "shapefiles" / "precipitation_areas" / "nve_regions.geojson"
+    PROJECT_DIR
+    / "shapefiles"
+    / "electricity_areas"
+    / "nve_regions.geojson"
 )
 
 
@@ -36,13 +46,13 @@ WEATHER_GEOJSON = (
 # Data loading
 # --------------------------------------------------
 
-
 def get_mongodb_uri():
     """Read MongoDB URI from Streamlit Secrets or environment variables."""
     try:
         uri = st.secrets.get("MONGODB_URI")
     except Exception:
         uri = None
+
     return uri or os.getenv("MONGODB_URI")
 
 
@@ -50,6 +60,7 @@ def get_mongodb_uri():
 def load_reservoirs():
     # Use the project's shared loader for ind320.nve_magasinstatistikk.
     uri = get_mongodb_uri()
+
     if uri:
         os.environ["MONGODB_URI"] = uri
 
@@ -64,12 +75,14 @@ def load_reservoirs():
         "fylling_TWh": "filled_TWh",
         "endring_fyllingsgrad": "fill_ratio_change",
     }
+
     for old_name, new_name in rename_fallbacks.items():
         if new_name not in df.columns and old_name in df.columns:
             df = df.rename(columns={old_name: new_name})
 
     required = {"area_type", "date", "area_nr"}
     missing = required.difference(df.columns)
+
     if missing:
         raise ValueError(
             "Reservoir collection is missing columns: "
@@ -78,6 +91,7 @@ def load_reservoirs():
 
     df["date"] = pd.to_datetime(df["date"], errors="coerce")
     df["area_nr"] = pd.to_numeric(df["area_nr"], errors="coerce")
+
     for column in ["fill_ratio", "filled_TWh", "fill_ratio_change"]:
         if column in df.columns:
             df[column] = pd.to_numeric(df[column], errors="coerce")
@@ -93,7 +107,9 @@ def load_geodata(path):
 @st.cache_data(ttl=900)
 def load_weather_points():
     """Load unique weather sampling points from ind320.weather_data."""
+
     uri = get_mongodb_uri()
+
     if not uri:
         raise ValueError(
             "MONGODB_URI is not configured. Add it to Streamlit Secrets "
@@ -101,8 +117,10 @@ def load_weather_points():
         )
 
     client = MongoClient(uri, serverSelectionTimeoutMS=10000)
+
     try:
         collection = client["ind320"]["weather_data"]
+
         cursor = collection.find(
             {},
             {
@@ -114,27 +132,42 @@ def load_weather_points():
                 "longitude": 1,
             },
         )
+
         points = pd.DataFrame(list(cursor))
+
     finally:
         client.close()
 
     if points.empty:
-        return pd.DataFrame(columns=["point_id", "REGION", "latitude", "longitude"])
+        return pd.DataFrame(
+            columns=["point_id", "REGION", "latitude", "longitude"]
+        )
 
     if "REGION" not in points.columns:
-        points["REGION"] = points["region"] if "region" in points.columns else None
+        points["REGION"] = (
+            points["region"] if "region" in points.columns else None
+        )
+
     elif "region" in points.columns:
         points["REGION"] = points["REGION"].fillna(points["region"])
 
-    points["latitude"] = pd.to_numeric(points["latitude"], errors="coerce")
-    points["longitude"] = pd.to_numeric(points["longitude"], errors="coerce")
+    points["latitude"] = pd.to_numeric(
+        points["latitude"], errors="coerce"
+    )
+
+    points["longitude"] = pd.to_numeric(
+        points["longitude"], errors="coerce"
+    )
+
     points = points.dropna(subset=["latitude", "longitude"])
 
     # One marker per sampling point, rather than one per timestamp.
     if "point_id" in points.columns:
         points = points.drop_duplicates(subset=["point_id"])
     else:
-        points = points.drop_duplicates(subset=["latitude", "longitude"])
+        points = points.drop_duplicates(
+            subset=["latitude", "longitude"]
+        )
 
     return points
 
@@ -143,19 +176,31 @@ def load_weather_points():
 # Check and load files
 # --------------------------------------------------
 
-required_files = [PRICE_GEOJSON, WEATHER_GEOJSON]
-missing = [str(path) for path in required_files if not path.exists()]
+required_files = [
+    PRICE_GEOJSON,
+    WEATHER_GEOJSON,
+]
+
+missing = [
+    str(path)
+    for path in required_files
+    if not path.exists()
+]
 
 if missing:
     st.error("Missing geographical boundary files:")
+
     for file in missing:
         st.write(file)
+
     st.info(
         "Reservoir and weather-point records are loaded from MongoDB. "
         "The electricity-area and NVE-region GeoJSON boundary files "
         "must still be included in the project."
     )
+
     st.stop()
+
 
 try:
     reservoirs = load_reservoirs()
@@ -184,11 +229,15 @@ reservoir_variable_labels = {
     "Filled volume (TWh)": "filled_TWh",
     "Weekly change (percentage points)": "fill_ratio_change",
 }
+
 reservoir_variable_label = st.sidebar.selectbox(
     "Reservoir variable",
     list(reservoir_variable_labels.keys()),
 )
-reservoir_variable = reservoir_variable_labels[reservoir_variable_label]
+
+reservoir_variable = reservoir_variable_labels[
+    reservoir_variable_label
+]
 
 if reservoir_variable not in reservoirs.columns:
     st.error(
@@ -221,8 +270,8 @@ selected_date = st.sidebar.date_input(
 # Helper: Create map with clickable polygons
 # --------------------------------------------------
 
-
 def create_polygon_map(gdf, area_column, value_column):
+
     map_center = [64.5, 12]
 
     map_object = folium.Map(
@@ -231,9 +280,13 @@ def create_polygon_map(gdf, area_column, value_column):
         tiles="CartoDB positron",
     )
 
-    values = pd.to_numeric(gdf[value_column], errors="coerce").dropna()
+    values = pd.to_numeric(
+        gdf[value_column],
+        errors="coerce",
+    ).dropna()
 
     if not values.empty:
+
         minimum = float(values.min())
         maximum = float(values.max())
 
@@ -245,6 +298,7 @@ def create_polygon_map(gdf, area_column, value_column):
             vmin=minimum,
             vmax=maximum,
         )
+
         colormap.caption = value_column
         colormap.add_to(map_object)
 
@@ -252,6 +306,7 @@ def create_polygon_map(gdf, area_column, value_column):
         colormap = None
 
     def style_function(feature):
+
         value = feature["properties"].get(value_column)
 
         if value is None or colormap is None:
@@ -266,7 +321,10 @@ def create_polygon_map(gdf, area_column, value_column):
             "fillOpacity": 0.7,
         }
 
-    tooltip_fields = [area_column, value_column]
+    tooltip_fields = [
+        area_column,
+        value_column,
+    ]
 
     folium.GeoJson(
         gdf.to_json(),
@@ -296,11 +354,20 @@ if map_type == "Price Area":
     st.subheader("Electricity Price Areas")
 
     price_data = reservoirs[
-        (reservoirs["area_type"].astype(str).str.upper() == "EL")
-        & (reservoirs["date"].dt.date == selected_date)
+        (
+            reservoirs["area_type"].astype(str).str.upper()
+            == "EL"
+        )
+        & (
+            reservoirs["date"].dt.date
+            == selected_date
+        )
     ].copy()
 
-    price_data["area"] = "NO" + price_data["area_nr"].astype(int).astype(str)
+    price_data["area"] = (
+        "NO"
+        + price_data["area_nr"].astype(int).astype(str)
+    )
 
     map_data = price_areas.merge(
         price_data[["area", reservoir_variable]],
@@ -322,10 +389,11 @@ if map_type == "Price Area":
         key="price_area_map",
     )
 
-    # Identify clicked polygon from its coordinates
+    # Identify clicked polygon from its coordinates.
     clicked = result.get("last_object_clicked")
 
     if clicked:
+
         point = gpd.GeoSeries(
             gpd.points_from_xy(
                 [clicked["lng"]],
@@ -334,24 +402,35 @@ if map_type == "Price Area":
             crs="EPSG:4326",
         ).iloc[0]
 
-        matches = map_data[map_data.geometry.intersects(point)]
+        matches = map_data[
+            map_data.geometry.intersects(point)
+        ]
 
         if not matches.empty:
+
             selected = matches.iloc[0]["ElSpotOmr"]
+
             st.session_state["selected_area"] = selected
             st.session_state["selected_area_type"] = "EL"
 
     current_selection = st.session_state.get("selected_area")
 
     if current_selection in map_data["ElSpotOmr"].values:
-        st.success(f"Selected electricity area: {current_selection}")
+
+        st.success(
+            f"Selected electricity area: {current_selection}"
+        )
 
         selected_value = map_data.loc[
             map_data["ElSpotOmr"] == current_selection,
             reservoir_variable,
         ]
 
-        if not selected_value.empty and pd.notna(selected_value.iloc[0]):
+        if (
+            not selected_value.empty
+            and pd.notna(selected_value.iloc[0])
+        ):
+
             st.metric(
                 reservoir_variable,
                 f"{selected_value.iloc[0]:.3f}",
@@ -378,10 +457,17 @@ elif map_type == "Weather Area":
     )
 
     # Plot the MongoDB sampling locations on top of the NVE polygons.
-    points_layer = folium.FeatureGroup(name="Weather sampling points")
+    points_layer = folium.FeatureGroup(
+        name="Weather sampling points"
+    )
+
     for _, point_row in weather_points.iterrows():
+
         folium.CircleMarker(
-            location=[point_row["latitude"], point_row["longitude"]],
+            location=[
+                point_row["latitude"],
+                point_row["longitude"],
+            ],
             radius=3,
             color="#1f78b4",
             fill=True,
@@ -391,7 +477,9 @@ elif map_type == "Weather Area":
                 f"Point ID: {point_row.get('point_id', 'N/A')}"
             ),
         ).add_to(points_layer)
+
     points_layer.add_to(map_object)
+
     folium.LayerControl().add_to(map_object)
 
     result = st_folium(
@@ -404,6 +492,7 @@ elif map_type == "Weather Area":
     clicked = result.get("last_object_clicked")
 
     if clicked:
+
         point = gpd.GeoSeries(
             gpd.points_from_xy(
                 [clicked["lng"]],
@@ -412,10 +501,14 @@ elif map_type == "Weather Area":
             crs="EPSG:4326",
         ).iloc[0]
 
-        matches = weather_map[weather_map.geometry.intersects(point)]
+        matches = weather_map[
+            weather_map.geometry.intersects(point)
+        ]
 
         if not matches.empty:
+
             selected = matches.iloc[0]["REGION"]
+
             st.session_state["selected_area"] = selected
             st.session_state["selected_area_type"] = "WEATHER"
 
@@ -425,16 +518,23 @@ elif map_type == "Weather Area":
         st.session_state.get("selected_area_type") == "WEATHER"
         and selected_region is not None
     ):
-        st.success(f"Selected weather region: {selected_region}")
+
+        st.success(
+            f"Selected weather region: {selected_region}"
+        )
 
         region_points = weather_points[
             weather_points["REGION"].astype(str).str.upper()
             == str(selected_region).upper()
         ]
 
-        st.metric("Sampling points", len(region_points))
+        st.metric(
+            "Sampling points",
+            len(region_points),
+        )
 
         if region_points.empty:
+
             st.info(
                 "No MongoDB weather sampling points were found for this region. "
                 "Check the region values in ind320.weather_data."
@@ -450,16 +550,28 @@ else:
     st.subheader("Water Reservoir Regions")
 
     water_data = reservoirs[
-        (reservoirs["area_type"].astype(str).str.upper() == "VASS")
-        & (reservoirs["date"].dt.date == selected_date)
+        (
+            reservoirs["area_type"].astype(str).str.upper()
+            == "VASS"
+        )
+        & (
+            reservoirs["date"].dt.date
+            == selected_date
+        )
     ].copy()
 
     if water_data.empty:
-        st.warning("No reservoir data is available for this date.")
+
+        st.warning(
+            "No reservoir data is available for this date."
+        )
 
     else:
 
-        water_data["area"] = "VASS " + water_data["area_nr"].astype(int).astype(str)
+        water_data["area"] = (
+            "VASS "
+            + water_data["area_nr"].astype(int).astype(str)
+        )
 
         import plotly.express as px
 
@@ -474,7 +586,10 @@ else:
             },
         )
 
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(
+            fig,
+            use_container_width=True,
+        )
 
         selected_area = st.selectbox(
             "Select water area",
@@ -490,13 +605,8 @@ else:
         ]
 
         if not selected_value.empty:
+
             st.metric(
                 reservoir_variable,
                 f"{selected_value.iloc[0]:.3f}",
-            ) 
-
-
-
-
-  
-
+            )
