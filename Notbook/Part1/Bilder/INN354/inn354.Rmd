@@ -1,0 +1,4017 @@
+
+---
+title: " assignment 3"
+output:
+  html_document: default
+  pdf_document: default
+date: "2025-10-023"
+editor_options: 
+  markdown: 
+    wrap: sentence
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r setup2, include=FALSE}
+knitr::opts_chunk$set(warning = F, message = F)
+```
+
+```{r}
+
+library(tidyquant)
+library(dplyr)
+library(lubridate)
+library(ggplot2)
+library(tidyr)
+
+library(readr)
+library(dplyr)
+library(lubridate)
+library(bupaR)
+library(dplyr)
+library(processmapR)
+library(edeaR)
+library(bupaverse)
+library(dplyr)
+library(tidyverse)
+library(ggplot2)
+library(lubridate)
+library(processmapR)
+library(processmonitR)
+library(petrinetR)
+library(DiagrammeR)
+library(here)
+```
+
+
+
+```{r}
+# Set working directory using forward slashes
+#setwd("C:/Users/Khali/OneDrive/INN354/INN354 2025H Event log.csv")
+
+# Import raw data from CSV
+raw_data <- read.csv("INN354 2025H Event log.csv")
+
+# Change time stamp format from character (example: 2020-07-14T17:36:34Z) to POSIXct
+raw_data$timestamp <- as.POSIXct(strptime(raw_data$timestamp, "%Y-%m-%dT%H:%M:%SZ"))
+raw_data$invoice_date <- as.POSIXct(strptime(raw_data$invoice_date, "%Y-%m-%dT%H:%M:%SZ"))
+raw_data$scan_date <- as.POSIXct(strptime(raw_data$scan_date, "%Y-%m-%dT%H:%M:%SZ"))
+
+# Change variable type of invoice_id from integer to factor (otherwise the dotted charts will not work)
+raw_data$invoice_id <- as.factor(raw_data$invoice_id)
+
+# Create basic event log 
+evlog <- eventlog(raw_data, 
+                  case_id = "invoice_id",
+                  activity_id = "activity_id", 
+                  activity_instance_id = "event_id",
+                  resource_id = "user_id",
+                  timestamp = "timestamp", 
+                  lifecycle_id = "lifecycle_id")
+
+# Calculate some basic features of each case - very useful for further analysis (you may want to add more features of your own)
+evlog %>% 
+  group_by_case() %>% 
+  summarise(
+    n_events = n(), 
+    n_users = n_distinct(user_id),
+    invoice_date = first(invoice_date),
+    start_date = min(timestamp),
+    end_date = max(timestamp),
+    end_event = last(activity_id),
+    throughput_time_days = as.numeric(difftime(max(timestamp), min(timestamp), units = "days")),
+    days_from_invoice_date_to_end = as.numeric(difftime(max(timestamp), min(invoice_date), units = "days")),
+    first_approver = first(first_approver_id),
+    second_approver = first(second_approver_id),
+    spend_area = first(gl_account),
+    vendor = first(vendor_id),
+    cost_center = first(cost_center_id),
+    profit_center = first(profit_center_id),
+    invoice_amount = first(invoice_amount),
+    currency = first(currency_id),
+    n_approvals = sum(activity_id == "Approved")
+  ) %>%
+  arrange(invoice_id, start_date) ->
+  case_stats
+
+# Write the case statistics to a CSV file for further analysis in other software
+write.csv(case_stats, file = "INN354 2025H Case statistics.csv")
+```
+
+
+
+```{r}
+2025-10-023
+library(tidyquant)
+library(dplyr)
+library(lubridate)
+library(ggplot2)
+library(tidyr)
+
+library(readr)
+library(dplyr)
+library(lubridate)
+library(bupaR)
+library(dplyr)
+library(processmapR)
+library(edeaR)
+library(bupaverse)
+library(dplyr)
+library(tidyverse)
+library(ggplot2)
+library(lubridate)
+library(processmapR)
+library(processmonitR)
+library(petrinetR)
+library(DiagrammeR)
+library(here)
+# Set working directory using forward slashes
+#setwd("")
+
+# Import raw data from CSV
+raw_data <- read.csv("INN354 2025H Event log.csv")
+
+# Change time stamp format from character (example: 2020-07-14T17:36:34Z) to POSIXct
+raw_data$timestamp <- as.POSIXct(strptime(raw_data$timestamp, "%Y-%m-%dT%H:%M:%SZ"))
+raw_data$invoice_date <- as.POSIXct(strptime(raw_data$invoice_date, "%Y-%m-%dT%H:%M:%SZ"))
+raw_data$scan_date <- as.POSIXct(strptime(raw_data$scan_date, "%Y-%m-%dT%H:%M:%SZ"))
+
+# Change variable type of invoice_id from integer to factor (otherwise the dotted charts will not work)
+raw_data$invoice_id <- as.factor(raw_data$invoice_id)
+
+# Create basic event log 
+evlog <- eventlog(raw_data, 
+                  case_id = "invoice_id",
+                  activity_id = "activity_id", 
+                  activity_instance_id = "event_id",
+                  resource_id = "user_id",
+                  timestamp = "timestamp", 
+                  lifecycle_id = "lifecycle_id")
+
+# Calculate some basic features of each case - very useful for further analysis (you may want to add more features of your own)
+evlog %>% 
+  group_by_case() %>% 
+  summarise(
+    n_events = n(), 
+    n_users = n_distinct(user_id),
+    invoice_date = first(invoice_date),
+    start_date = min(timestamp),
+    end_date = max(timestamp),
+    end_event = last(activity_id),
+    throughput_time_days = as.numeric(difftime(max(timestamp), min(timestamp), units = "days")),
+    days_from_invoice_date_to_end = as.numeric(difftime(max(timestamp), min(invoice_date), units = "days")),
+    first_approver = first(first_approver_id),
+    second_approver = first(second_approver_id),
+    spend_area = first(gl_account),
+    vendor = first(vendor_id),
+    cost_center = first(cost_center_id),
+    profit_center = first(profit_center_id),
+    invoice_amount = first(invoice_amount),
+    currency = first(currency_id),
+    n_approvals = sum(activity_id == "Approved")
+  ) %>%
+  arrange(invoice_id, start_date) ->
+  case_stats
+
+# Write the case statistics to a CSV file for further analysis in other software
+write.csv(case_stats, file = "INN354 2025H Case statistics.csv")
+# Change time stamp format from character (example: 2020-07-14T17:36:34Z) to POSIXct
+raw_data$timestamp <- as.POSIXct(strptime(raw_data$timestamp, "%Y-%m-%dT%H:%M:%SZ"))
+raw_data$invoice_date <- as.POSIXct(strptime(raw_data$invoice_date, "%Y-%m-%dT%H:%M:%SZ"))
+raw_data$scan_date <- as.POSIXct(strptime(raw_data$scan_date, "%Y-%m-%dT%H:%M:%SZ"))
+
+# Change variable type of invoice_id from integer to factor (otherwise the dotted charts will not work)
+raw_data$invoice_id <- as.factor(raw_data$invoice_id)
+
+# Create basic event log 
+evlog <- bupaR::eventlog(raw_data, 
+                  case_id = "invoice_id",
+                  activity_id = "activity_id", 
+                  activity_instance_id = "event_id",
+                  resource_id = "user_id",
+                  timestamp = "timestamp", 
+                  lifecycle_id = "lifecycle_id")
+
+# Calculate some basic features of each case - very useful for further analysis
+case_stats <- evlog %>% 
+  bupaR::group_by_case() %>% 
+  dplyr::summarise(
+    n_events = n(), 
+    n_users = n_distinct(user_id),
+    invoice_date = first(invoice_date),
+    start_date = min(timestamp),
+    end_date = max(timestamp),
+    end_event = last(activity_id),
+    throughput_time_days = as.numeric(difftime(max(timestamp), min(timestamp), units = "days")),
+    days_from_invoice_date_to_end = as.numeric(difftime(max(timestamp), min(invoice_date), units = "days")),
+    first_approver = first(first_approver_id),
+    second_approver = first(second_approver_id),
+    spend_area = first(gl_account),
+    vendor = first(vendor_id),
+    cost_center = first(cost_center_id),
+    profit_center = first(profit_center_id),
+    invoice_amount = first(invoice_amount),
+    currency = first(currency_id),
+    n_approvals = sum(activity_id == "Approved")
+  ) %>%
+  arrange(invoice_id, start_date)
+
+# Write the case statistics to a CSV file for further analysis in other software
+write.csv(case_stats, file = "INN354 2025H Case statistics.csv")
+
+# Display first few rows of case statistics
+head(case_stats)
+## # A tibble: 6 × 18
+##   invoice_id n_events n_users invoice_date start_date
+##   <fct>         <int>   <int> <dttm>       <dttm>    
+## 1 5359963           3       2 NA           NA        
+## 2 5365746           3       2 NA           NA        
+## 3 5482719           5       2 NA           NA        
+## 4 5945074           3       2 NA           NA        
+## 5 5945076           3       2 NA           NA        
+## 6 5945077           3       2 NA           NA        
+## # ℹ 13 more variables: end_date <dttm>, end_event <chr>,
+## #   throughput_time_days <dbl>, days_from_invoice_date_to_end <dbl>,
+## #   first_approver <chr>, second_approver <chr>, spend_area <chr>,
+## #   vendor <chr>, cost_center <int>, profit_center <int>, invoice_amount <dbl>,
+## #   currency <chr>, n_approvals <int>
+## # A tibble: 6 × 18
+##   invoice_id n_events n_users invoice_date start_date
+##   <fct>         <int>   <int> <dttm>       <dttm>    
+## 1 5359963           3       2 NA           NA        
+## 2 5365746           3       2 NA           NA        
+## 3 5482719           5       2 NA           NA        
+## 4 5945074           3       2 NA           NA        
+## 5 5945076           3       2 NA           NA        
+## 6 5945077           3       2 NA           NA        
+## # ℹ 13 more variables: end_date <dttm>, end_event <chr>,
+## #   throughput_time_days <dbl>, days_from_invoice_date_to_end <dbl>,
+## #   first_approver <chr>, second_approver <chr>, spend_area <chr>,
+## #   vendor <chr>, cost_center <int>, profit_center <int>, invoice_amount <dbl>,
+## #   currency <chr>, n_approvals <int>
+# Additional useful calculations for case_stats
+case_stats <- evlog %>% 
+  group_by_case() %>% 
+  summarise(
+    # Existing metrics...
+    n_events = n(), 
+    n_users = n_distinct(user_id),
+    invoice_date = first(invoice_date),
+    start_date = min(timestamp),
+    end_date = max(timestamp),
+    end_event = last(activity_id),
+    throughput_time_days = as.numeric(difftime(max(timestamp), min(timestamp), units = "days")),
+    days_from_invoice_date_to_end = as.numeric(difftime(max(timestamp), min(invoice_date), units = "days")),
+    first_approver = first(first_approver_id),
+    second_approver = first(second_approver_id),
+    spend_area = first(gl_account),
+    vendor = first(vendor_id),
+    cost_center = first(cost_center_id),
+    profit_center = first(profit_center_id),
+    invoice_amount = first(invoice_amount),
+    currency = first(currency_id),
+    n_approvals = sum(activity_id == "Approved"),
+    
+    # Additional useful metrics:
+    has_second_approver = !is.na(first(second_approver_id)),
+    was_rejected = any(activity_id == "Approval rejected"),
+    was_on_hold = any(activity_id == "On hold at approver"),
+    n_rejections = sum(activity_id == "Approval rejected"),
+    processing_delay = as.numeric(difftime(min(timestamp), min(invoice_date), units = "days")),
+    scan_to_process_days = as.numeric(difftime(min(timestamp), first(scan_date), units = "days")),
+    # Categorize by amount for analysis
+    amount_category = cut(first(invoice_amount), 
+                        breaks = c(0, 1000, 10000, 50000, Inf),
+                        labels = c("Small", "Medium", "Large", "Very Large"))
+  ) %>%
+  arrange(invoice_id, start_date)
+# Basic process mining visualizations
+
+#library(processmapR)
+#library(edeaR)
+
+# Dotted chart
+#dotted_chart(evlog)
+
+# Throughput time analysis
+#throughput_time(evlog, "case") %>% plot()
+# Check for missing values
+sapply(evlog, function(x) sum(is.na(x)))
+##                 event_id               invoice_id                timestamp 
+##                        0                        0                   346999 
+##              activity_id                  user_id      sap_processing_type 
+##                        0                        0                       50 
+##          sap_object_code sap_next_processing_type             invoice_date 
+##                   172882                      533                   346999 
+##                scan_date elkjop_nordic_country_id              currency_id 
+##                   346999                        0                        0 
+##           invoice_amount                vendor_id            gl_account_id 
+##                        0                    16721                    61208 
+##               gl_account           cost_center_id         profit_center_id 
+##                    80723                   179262                   161106 
+##        first_approver_id       second_approver_id             lifecycle_id 
+##                   167798                   295655                        0 
+##                   .order 
+##                        0
+# Check case completeness
+traces(evlog) %>% arrange(desc(relative_frequency))
+## # A tibble: 2,489 × 3
+##    trace                                   absolute_frequency relative_frequency
+##    <chr>                                                <int>              <dbl>
+##  1 Data management,Initial validation,Sen…              20249             0.353 
+##  2 Data management,Initial validation,Sen…              10183             0.177 
+##  3 Initial validation,Data management,Sen…               2745             0.0478
+##  4 Data management,Initial validation,Inv…               2236             0.0389
+##  5 Data management,Initial validation,Pos…               2049             0.0357
+##  6 Initial validation,Data management,Sen…               1270             0.0221
+##  7 Data management,Initial validation,Sen…               1269             0.0221
+##  8 Data management,Initial validation,Sen…                984             0.0171
+##  9 Data management,Initial validation,Sen…                866             0.0151
+## 10 Data management,Initial validation,Tra…                757             0.0132
+## # ℹ 2,479 more rows
+# Check timestamp integrity
+evlog %>% 
+  group_by_case() %>% 
+  summarise(time_ordered = all(timestamp == sort(timestamp))) %>% 
+  summarise(percent_ordered = mean(time_ordered) * 100)
+## # A tibble: 1 × 1
+##   percent_ordered
+##             <dbl>
+## 1             100
+# Import raw data
+raw_data <- read.csv("INN354 2025H Event log.csv")
+
+# Data cleaning and formatting
+raw_data <- raw_data %>%
+  mutate(
+    timestamp = as.POSIXct(strptime(timestamp, "%Y-%m-%dT%H:%M:%SZ")),
+    invoice_date = as.POSIXct(strptime(invoice_date, "%Y-%m-%dT%H:%M:%SZ")),
+    scan_date = as.POSIXct(strptime(scan_date, "%Y-%m-%dT%H:%M:%SZ")),
+    invoice_id = as.factor(invoice_id),
+    # Create process stage categories
+    process_stage = case_when(
+      activity_id %in% c("Data management", "Get goods receipt from WM", "Initial validation") ~ "Preparation",
+      activity_id %in% c("Sent for approval", "On hold at approver") ~ "Approval",
+      activity_id %in% c("Approved", "Approval rejected") ~ "Decision",
+      activity_id %in% c("FI Posted Automatically", "Posted manually") ~ "Posting",
+      activity_id == "Invoice document deleted" ~ "Exception",
+      TRUE ~ "Other"
+    ),
+    # Flag high-value invoices (above 500,000 threshold)
+    high_value = invoice_amount > 500000,
+    # Calculate processing delays
+    scan_to_process_days = as.numeric(difftime(timestamp, scan_date, units = "days"))
+  )
+
+# Create event log
+evlog <- eventlog(raw_data, 
+                 case_id = "invoice_id",
+                 activity_id = "activity_id", 
+                 activity_instance_id = "event_id",
+                 resource_id = "user_id",
+                 timestamp = "timestamp", 
+                 lifecycle_id = "lifecycle_id")
+
+cat("Data imported successfully:", nrow(raw_data), "events,", n_distinct(raw_data$invoice_id), "cases\n")
+## Data imported successfully: 346999 events, 57417 cases
+# 2. PROCESS OVERVIEW AND BASIC STATISTICS
+cat("\n=== STEP 2: PROCESS OVERVIEW ===\n")
+## 
+## === STEP 2: PROCESS OVERVIEW ===
+# Basic process statistics
+process_summary <- evlog %>%
+  group_by_case() %>%
+  summarise(
+    n_events = n(),
+    n_users = n_distinct(user_id),
+    invoice_date = first(invoice_date),
+    start_date = min(timestamp),
+    end_date = max(timestamp),
+    final_status = last(activity_id),
+    throughput_time_days = as.numeric(difftime(max(timestamp), min(timestamp), units = "days")),
+    processing_time_from_invoice = as.numeric(difftime(max(timestamp), min(invoice_date), units = "days")),
+    first_approver = first(first_approver_id),
+    second_approver = first(second_approver_id),
+    gl_account = first(gl_account),
+    vendor = first(vendor_id),
+    cost_center = first(cost_center_id),
+    invoice_amount = first(invoice_amount),
+    currency = first(currency_id),
+    n_approvals = sum(activity_id == "Approved"),
+    n_rejections = sum(activity_id == "Approval rejected"),
+    has_rework = any(activity_id %in% c("Approval rejected", "On hold at approver")),
+    has_manual_posting = any(activity_id == "Posted manually")
+  ) %>%
+  mutate(
+    process_complexity = case_when(
+      n_events <= 3 ~ "Simple",
+      n_events <= 6 ~ "Medium",
+      TRUE ~ "Complex"
+    )
+  )
+
+# Save case statistics
+write.csv(process_summary, "INN354_case_statistics_detailed.csv", row.names = FALSE)
+# 3. ACTIVITY ANALYSIS
+cat("\n=== STEP 3: ACTIVITY ANALYSIS ===\n")
+## 
+## === STEP 3: ACTIVITY ANALYSIS ===
+# Activity frequency
+activity_freq <- raw_data %>%
+  count(activity_id, sort = TRUE) %>%
+  mutate(percentage = n / sum(n) * 100)
+
+print("Top 10 Activities:")
+## [1] "Top 10 Activities:"
+print(activity_freq %>% head(10))
+##                                     activity_id     n percentage
+## 1                                      Approved 77116  22.223695
+## 2                            Initial validation 59872  17.254228
+## 3                               Data management 58823  16.951922
+## 4                             Sent for approval 55319  15.942121
+## 5                       FI Posted Automatically 44270  12.757962
+## 6                               Posted manually  9732   2.804619
+## 7                             Approval rejected  7368   2.123349
+## 8                             Asked for Comment  5699   1.642368
+## 9                            Approval forwarded  5591   1.611244
+## 10 FI for Manual processing after initial check  4363   1.257352
+# 4. PROCESS FLOW AND VARIANTS ANALYSIS - CORRECTED
+cat("\n=== STEP 4: PROCESS FLOW AND VARIANTS ===\n")
+## 
+## === STEP 4: PROCESS FLOW AND VARIANTS ===
+# Process variant analysis - FIXED APPROACH
+# Get trace list first
+trace_list <- evlog %>%
+  traces()
+
+# Process variants analysis
+process_variants <- trace_list %>%
+  count(trace) %>%
+  arrange(desc(n)) %>%
+  mutate(
+    percentage = n / sum(n) * 100,
+    cumulative_percentage = cumsum(percentage)
+  )
+
+cat("Process variants discovered:", nrow(process_variants), "\n")
+## Process variants discovered: 2490
+print("Top 10 process variants:")
+## [1] "Top 10 process variants:"
+print(process_variants %>% head(10))
+## # A tibble: 10 × 4
+##    trace                                      n percentage cumulative_percentage
+##    <chr>                                  <int>      <dbl>                 <dbl>
+##  1 Approval forwarded,Data management,In…     1     0.0402                0.0402
+##  2 Approval forwarded,Initial validation…     1     0.0402                0.0803
+##  3 Approval rejected,Data management,Ini…     1     0.0402                0.120 
+##  4 Approved,Data management,Get goods re…     1     0.0402                0.161 
+##  5 Approved,Data management,Initial vali…     1     0.0402                0.201 
+##  6 Approved,Data management,Initial vali…     1     0.0402                0.241 
+##  7 Approved,Data management,Initial vali…     1     0.0402                0.281 
+##  8 Approved,Data management,Initial vali…     1     0.0402                0.321 
+##  9 Approved,Data management,Initial vali…     1     0.0402                0.361 
+## 10 Approved,FI Posted Automatically,Data…     1     0.0402                0.402
+# Alternative approach for process discovery
+process_paths <- evlog %>%
+  group_by_case() %>%
+  summarise(
+    activity_sequence = paste(activity_id, collapse = " -> "),
+    n_activities = n()
+  ) %>%
+  count(activity_sequence, sort = TRUE) %>%
+  mutate(percentage = n / sum(n) * 100)
+
+print("Top 10 Process Paths:")
+## [1] "Top 10 Process Paths:"
+print(process_paths %>% head(10))
+## # A tibble: 10 × 3
+##    activity_sequence                                                n percentage
+##    <chr>                                                        <int>      <dbl>
+##  1 Data management -> Initial validation -> Sent for approval … 20249      35.3 
+##  2 Data management -> Initial validation -> Sent for approval … 10183      17.7 
+##  3 Initial validation -> Data management -> Sent for approval …  2745       4.78
+##  4 Data management -> Initial validation -> Invoice document d…  2236       3.89
+##  5 Data management -> Initial validation -> Posted manually      2049       3.57
+##  6 Initial validation -> Data management -> Sent for approval …  1270       2.21
+##  7 Data management -> Initial validation -> Sent for approval …  1269       2.21
+##  8 Data management -> Initial validation -> Sent for approval …   984       1.71
+##  9 Data management -> Initial validation -> Sent for approval …   866       1.51
+## 10 Data management -> Initial validation -> Transfered to new …   757       1.32
+# 5. THROUGHPUT TIME AND BOTTLENECK ANALYSIS
+cat("\n=== STEP 5: THROUGHPUT TIME ANALYSIS ===\n")
+## 
+## === STEP 5: THROUGHPUT TIME ANALYSIS ===
+# Overall throughput statistics
+throughput_stats <- process_summary %>%
+  summarise(
+    avg_throughput_days = mean(throughput_time_days, na.rm = TRUE),
+    median_throughput_days = median(throughput_time_days, na.rm = TRUE),
+    min_throughput_days = min(throughput_time_days, na.rm = TRUE),
+    max_throughput_days = max(throughput_time_days, na.rm = TRUE),
+    std_throughput_days = sd(throughput_time_days, na.rm = TRUE),
+    total_cases = n()
+  )
+
+print("Throughput Time Statistics (Days):")
+## [1] "Throughput Time Statistics (Days):"
+print(throughput_stats)
+## # A tibble: 1 × 6
+##   avg_throughput_days median_throughput_days min_throughput_days
+##                 <dbl>                  <dbl>               <dbl>
+## 1                8.89                   4.50                   0
+## # ℹ 3 more variables: max_throughput_days <dbl>, std_throughput_days <dbl>,
+## #   total_cases <int>
+# Bottleneck analysis by process stage
+stage_durations <- raw_data %>%
+  group_by(invoice_id, process_stage) %>%
+  summarise(
+    stage_start = min(timestamp),
+    stage_end = max(timestamp),
+    stage_duration_days = as.numeric(difftime(max(timestamp), min(timestamp), units = "days"))
+  ) %>%
+  group_by(process_stage) %>%
+  summarise(
+    avg_duration_days = mean(stage_duration_days, na.rm = TRUE),
+    median_duration_days = median(stage_duration_days, na.rm = TRUE),
+    min_duration_days = min(stage_duration_days, na.rm = TRUE),
+    max_duration_days = max(stage_duration_days, na.rm = TRUE),
+    cases = n()
+  ) %>%
+  arrange(desc(avg_duration_days))
+
+print("Bottleneck Analysis by Process Stage:")
+## [1] "Bottleneck Analysis by Process Stage:"
+print(stage_durations)
+## # A tibble: 6 × 6
+##   process_stage avg_duration_days median_duration_days min_duration_days
+##   <chr>                     <dbl>                <dbl>             <dbl>
+## 1 Other                  6.25                0                         0
+## 2 Decision               2.07                0                         0
+## 3 Approval               1.04                0                         0
+## 4 Preparation            0.692               0.0000116                 0
+## 5 Exception              0.0829              0                         0
+## 6 Posting                0.000203            0                         0
+## # ℹ 2 more variables: max_duration_days <dbl>, cases <int>
+# 6. APPROVAL PROCESS ANALYSIS
+cat("\n=== STEP 6: APPROVAL PROCESS ANALYSIS ===\n")
+## 
+## === STEP 6: APPROVAL PROCESS ANALYSIS ===
+# Approval cycle analysis
+approval_analysis <- raw_data %>%
+  group_by(invoice_id) %>%
+  filter(any(activity_id == "Sent for approval")) %>%
+  summarise(
+    approval_sent_time = min(timestamp[activity_id == "Sent for approval"]),
+    approval_decision_time = min(timestamp[activity_id %in% c("Approved", "Approval rejected")]),
+    approval_response_days = as.numeric(difftime(approval_decision_time, approval_sent_time, units = "days")),
+    approval_outcome = first(activity_id[activity_id %in% c("Approved", "Approval rejected")]),
+    n_approval_cycles = sum(activity_id == "Sent for approval")
+  )
+
+approval_stats <- approval_analysis %>%
+  summarise(
+    avg_approval_time_days = mean(approval_response_days, na.rm = TRUE),
+    median_approval_time_days = median(approval_response_days, na.rm = TRUE),
+    min_approval_time_days = min(approval_response_days, na.rm = TRUE),
+    max_approval_time_days = max(approval_response_days, na.rm = TRUE),
+    approval_rate = sum(approval_outcome == "Approved", na.rm = TRUE) / n() * 100,
+    reapproval_rate = mean(n_approval_cycles > 1) * 100,
+    total_approval_cases = n()
+  )
+
+print("Approval Process Statistics:")
+## [1] "Approval Process Statistics:"
+print(approval_stats)
+## # A tibble: 1 × 7
+##   avg_approval_time_days median_approval_time_days min_approval_time_days
+##                    <dbl>                     <dbl>                  <dbl>
+## 1                    Inf                      1.09                 -0.887
+## # ℹ 4 more variables: max_approval_time_days <dbl>, approval_rate <dbl>,
+## #   reapproval_rate <dbl>, total_approval_cases <int>
+# 7. RESOURCE AND USER ANALYSIS
+cat("\n=== STEP 7: RESOURCE ANALYSIS ===\n")
+## 
+## === STEP 7: RESOURCE ANALYSIS ===
+# User workload analysis
+user_workload <- raw_data %>%
+  group_by(user_id) %>%
+  summarise(
+    n_activities = n(),
+    n_cases = n_distinct(invoice_id),
+    unique_activities = n_distinct(activity_id),
+    first_activity = min(timestamp),
+    last_activity = max(timestamp),
+    workload_period_days = as.numeric(difftime(max(timestamp), min(timestamp), units = "days"))
+  ) %>%
+  mutate(
+    activities_per_day = n_activities / workload_period_days
+  ) %>%
+  arrange(desc(n_activities))
+
+print("Top 10 Most Active Users:")
+## [1] "Top 10 Most Active Users:"
+print(user_workload %>% head(10))
+## # A tibble: 10 × 8
+##    user_id n_activities n_cases unique_activities first_activity     
+##    <chr>          <int>   <int>             <int> <dttm>             
+##  1 User2         172925   57417                 9 NA                 
+##  2 User144         8253    6380                12 2021-01-04 15:46:38
+##  3 User189         7596    6225                13 2020-12-10 07:45:32
+##  4 User280         7536    6492                12 2021-02-09 15:15:02
+##  5 User117         6321    5462                10 2020-12-21 12:32:50
+##  6 User10          5935    4755                13 2021-01-04 10:07:40
+##  7 User119         5802    5475                 9 2021-01-05 12:08:06
+##  8 User199         5063    4271                11 2020-12-02 09:14:16
+##  9 User14          4475    4075                10 2020-10-29 09:16:27
+## 10 User215         4427    4079                11 2021-01-06 18:26:38
+## # ℹ 3 more variables: last_activity <dttm>, workload_period_days <dbl>,
+## #   activities_per_day <dbl>
+# 8. VENDOR AND COST CENTER ANALYSIS
+cat("\n=== STEP 8: VENDOR AND COST CENTER ANALYSIS ===\n")
+## 
+## === STEP 8: VENDOR AND COST CENTER ANALYSIS ===
+# Vendor performance
+vendor_analysis <- process_summary %>%
+  group_by(vendor) %>%
+  summarise(
+    invoice_count = n(),
+    avg_amount = mean(invoice_amount, na.rm = TRUE),
+    total_amount = sum(invoice_amount, na.rm = TRUE),
+    avg_processing_days = mean(throughput_time_days, na.rm = TRUE),
+    rejection_rate = sum(n_rejections > 0) / n() * 100,
+    manual_posting_rate = sum(has_manual_posting) / n() * 100,
+    has_rework_rate = sum(has_rework) / n() * 100
+  ) %>%
+  arrange(desc(invoice_count))
+
+print("Top 10 Vendors by Invoice Count:")
+## [1] "Top 10 Vendors by Invoice Count:"
+print(vendor_analysis %>% head(10))
+## # A tibble: 10 × 8
+##    vendor     invoice_count avg_amount total_amount avg_processing_days
+##    <chr>              <int>      <dbl>        <dbl>               <dbl>
+##  1 <NA>                3369    122320.   412095697.                6.96
+##  2 Vendor2793          2350      9499.    22322649.               16.1 
+##  3 Vendor2781          2070       731.     1513290.               21.0 
+##  4 Vendor138           1597       278.      444097.                3.39
+##  5 Vendor1397          1565      1934.     3026493.                4.51
+##  6 Vendor1947          1270      1128.     1432484.               26.0 
+##  7 Vendor2792           978      3422.     3346402.                4.59
+##  8 Vendor1772           693      1320.      914441                 8.68
+##  9 Vendor40             597       950.      566912.                8.77
+## 10 Vendor121            550     29552.    16253661.               13.5 
+## # ℹ 3 more variables: rejection_rate <dbl>, manual_posting_rate <dbl>,
+## #   has_rework_rate <dbl>
+# 9. HIGH-VALUE INVOICE ANALYSIS (POST-CONTROL)
+cat("\n=== STEP 9: HIGH-VALUE INVOICE ANALYSIS ===\n")
+## 
+## === STEP 9: HIGH-VALUE INVOICE ANALYSIS ===
+high_value_analysis <- process_summary %>%
+  filter(invoice_amount > 500000) %>%
+  summarise(
+    count = n(),
+    percentage_of_total = n() / nrow(process_summary) * 100,
+    avg_processing_days = mean(throughput_time_days, na.rm = TRUE),
+    manual_posting_rate = sum(has_manual_posting) / n() * 100,
+    rejection_rate = sum(n_rejections > 0) / n() * 100,
+    rework_rate = sum(has_rework) / n() * 100
+  )
+
+print("High-Value Invoice Analysis (>500,000):")
+## [1] "High-Value Invoice Analysis (>500,000):"
+print(high_value_analysis)
+## # A tibble: 1 × 6
+##   count percentage_of_total avg_processing_days manual_posting_rate
+##   <int>               <dbl>               <dbl>               <dbl>
+## 1   925                1.61                11.2                90.5
+## # ℹ 2 more variables: rejection_rate <dbl>, rework_rate <dbl>
+# 10. EFFICIENCY ISSUES IDENTIFICATION
+cat("\n=== STEP 10: EFFICIENCY ISSUES IDENTIFICATION ===\n")
+## 
+## === STEP 10: EFFICIENCY ISSUES IDENTIFICATION ===
+# Identify key inefficiency patterns
+efficiency_issues <- list()
+
+# Issue 1: Long approval cycles
+efficiency_issues$long_approvals <- approval_analysis %>%
+  filter(approval_response_days > 7) %>%
+  nrow()
+
+# Issue 2: Multiple approval cycles
+efficiency_issues$multiple_approvals <- approval_analysis %>%
+  filter(n_approval_cycles > 1) %>%
+  nrow()
+
+# Issue 3: Manual postings
+efficiency_issues$manual_postings <- sum(process_summary$has_manual_posting)
+
+# Issue 4: Extended processing times
+efficiency_issues$extended_processing <- process_summary %>%
+  filter(throughput_time_days > 30) %>%
+  nrow()
+
+# Issue 5: Rework cases
+efficiency_issues$rework_cases <- sum(process_summary$has_rework)
+
+# Calculate percentages
+efficiency_issues$long_approvals_pct <- efficiency_issues$long_approvals / nrow(approval_analysis) * 100
+efficiency_issues$multiple_approvals_pct <- efficiency_issues$multiple_approvals / nrow(approval_analysis) * 100
+efficiency_issues$manual_postings_pct <- efficiency_issues$manual_postings / nrow(process_summary) * 100
+efficiency_issues$extended_processing_pct <- efficiency_issues$extended_processing / nrow(process_summary) * 100
+efficiency_issues$rework_cases_pct <- efficiency_issues$rework_cases / nrow(process_summary) * 100
+
+print("Efficiency Issues Summary:")
+## [1] "Efficiency Issues Summary:"
+print(efficiency_issues)
+## $long_approvals
+## [1] 6975
+## 
+## $multiple_approvals
+## [1] 5541
+## 
+## $manual_postings
+## [1] 8458
+## 
+## $extended_processing
+## [1] 3660
+## 
+## $rework_cases
+## [1] 6713
+## 
+## $long_approvals_pct
+## [1] 14.39926
+## 
+## $multiple_approvals_pct
+## [1] 11.43889
+## 
+## $manual_postings_pct
+## [1] 14.73083
+## 
+## $extended_processing_pct
+## [1] 6.374419
+## 
+## $rework_cases_pct
+## [1] 11.69166
+# 11. VISUALIZATION AND REPORTING
+cat("\n=== STEP 11: CREATING VISUALIZATIONS ===\n")
+## 
+## === STEP 11: CREATING VISUALIZATIONS ===
+# Create key visualizations
+create_visualizations <- function() {
+  
+  # Throughput time distribution
+  p1 <- ggplot(process_summary, aes(x = throughput_time_days)) +
+    geom_histogram(bins = 30, fill = "steelblue", alpha = 0.7) +
+    labs(title = "Distribution of Invoice Processing Times",
+         subtitle = "Elkjøp Nordic Accounts Payable Process",
+         x = "Processing Time (Days)", y = "Number of Invoices") +
+    theme_minimal()
+  
+  ggsave("throughput_distribution.png", p1, width = 10, height = 6)
+  
+  # Process stage duration comparison
+  p2 <- ggplot(stage_durations, aes(x = reorder(process_stage, -avg_duration_days), y = avg_duration_days)) +
+    geom_bar(stat = "identity", fill = "coral", alpha = 0.7) +
+    labs(title = "Average Duration by Process Stage",
+         subtitle = "Identifying Process Bottlenecks",
+         x = "Process Stage", y = "Average Duration (Days)") +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  
+  ggsave("stage_durations.png", p2, width = 10, height = 6)
+  
+  # Approval response time analysis
+  if(nrow(approval_analysis) > 0) {
+    p3 <- ggplot(approval_analysis, aes(x = approval_response_days)) +
+      geom_histogram(bins = 30, fill = "darkgreen", alpha = 0.7) +
+      labs(title = "Approval Response Time Distribution",
+           subtitle = "Analysis of Approval Process Efficiency",
+           x = "Approval Response Time (Days)", y = "Number of Invoices") +
+      theme_minimal()
+    
+    ggsave("approval_times.png", p3, width = 10, height = 6)
+  }
+  
+  # Activity frequency
+  p4 <- ggplot(activity_freq %>% head(15), aes(x = reorder(activity_id, n), y = n)) +
+    geom_bar(stat = "identity", fill = "purple", alpha = 0.7) +
+    coord_flip() +
+    labs(title = "Most Frequent Activities",
+         subtitle = "Process Activity Distribution",
+         x = "Activity", y = "Frequency") +
+    theme_minimal()
+  
+  ggsave("activity_frequency.png", p4, width = 10, height = 6)
+  
+  # Process complexity analysis
+  p5 <- ggplot(process_summary, aes(x = process_complexity)) +
+    geom_bar(fill = "orange", alpha = 0.7) +
+    labs(title = "Process Complexity Distribution",
+         subtitle = "Classification by Number of Activities per Case",
+         x = "Process Complexity", y = "Number of Invoices") +
+    theme_minimal()
+  
+  ggsave("process_complexity.png", p5, width = 10, height = 6)
+}
+
+# Generate visualizations
+create_visualizations()
+# Create summary report
+summary_report <- list()
+
+summary_report$process_volume <- n_distinct(raw_data$invoice_id)
+summary_report$total_events <- nrow(raw_data)
+summary_report$time_period <- paste(format(min(raw_data$timestamp), "%Y-%m-%d"), "to", format(max(raw_data$timestamp), "%Y-%m-%d"))
+summary_report$avg_throughput_days <- round(mean(process_summary$throughput_time_days, na.rm = TRUE), 2)
+summary_report$median_throughput_days <- round(median(process_summary$throughput_time_days, na.rm = TRUE), 2)
+summary_report$approval_rate <- round(approval_stats$approval_rate, 2)
+summary_report$rework_rate <- round(mean(process_summary$has_rework) * 100, 2)
+summary_report$manual_posting_rate <- round(mean(process_summary$has_manual_posting) * 100, 2)
+summary_report$process_variants <- nrow(process_variants)
+summary_report$most_common_variant_coverage <- round(max(process_variants$percentage), 2)
+
+print("=== COMPREHENSIVE ANALYSIS SUMMARY ===")
+## [1] "=== COMPREHENSIVE ANALYSIS SUMMARY ==="
+print(summary_report)
+## $process_volume
+## [1] 57417
+## 
+## $total_events
+## [1] 346999
+## 
+## $time_period
+## [1] "NA to NA"
+## 
+## $avg_throughput_days
+## [1] 8.89
+## 
+## $median_throughput_days
+## [1] 4.5
+## 
+## $approval_rate
+## [1] 88.67
+## 
+## $rework_rate
+## [1] 11.69
+## 
+## $manual_posting_rate
+## [1] 14.73
+## 
+## $process_variants
+## [1] 2490
+## 
+## $most_common_variant_coverage
+## [1] 0.04
+# Save detailed analysis results
+write.csv(activity_freq, "activity_frequency_analysis.csv", row.names = FALSE)
+write.csv(process_variants, "process_variants_analysis.csv", row.names = FALSE)
+write.csv(process_paths, "process_paths_analysis.csv", row.names = FALSE)
+write.csv(approval_analysis, "approval_process_analysis.csv", row.names = FALSE)
+write.csv(vendor_analysis, "vendor_performance_analysis.csv", row.names = FALSE)
+write.csv(user_workload, "user_workload_analysis.csv", row.names = FALSE)
+write.csv(stage_durations, "bottleneck_analysis.csv", row.names = FALSE)
+# Generate recommendations based on analysis
+recommendations <- data.frame(
+  Priority = character(),
+  Issue = character(),
+  Impact_Level = character(),
+  Recommendation = character(),
+  Expected_Benefit = character(),
+  Implementation_Complexity = character(),
+  stringsAsFactors = FALSE
+)
+
+# Add specific recommendations based on findings
+recommendations <- rbind(recommendations, data.frame(
+  Priority = "HIGH",
+  Issue = "Long approval cycles and multiple approval rounds",
+  Impact_Level = "High",
+  Recommendation = "Implement automated reminder system for approvers + establish 3-day SLA for approval responses + pre-approval validation rules",
+  Expected_Benefit = "Reduce approval time by 50-70%, decrease rework by 60%, improve vendor relationships",
+  Implementation_Complexity = "Medium"
+))
+
+recommendations <- rbind(recommendations, data.frame(
+  Priority = "HIGH",
+  Issue = "High manual posting rate and process exceptions",
+  Impact_Level = "High", 
+  Recommendation = "Expand RPA automation for standard invoice types + implement intelligent validation rules + exception handling workflow",
+  Expected_Benefit = "Reduce manual work by 40-60%, decrease errors by 50%, faster processing",
+  Implementation_Complexity = "High"
+))
+
+recommendations <- rbind(recommendations, data.frame(
+  Priority = "MEDIUM",
+  Issue = "Vendor performance variation and invoice quality issues",
+  Impact_Level = "Medium",
+  Recommendation = "Create vendor performance dashboard + establish vendor training program + standardized invoice templates",
+  Expected_Benefit = "Improve invoice quality by 40%, reduce exceptions by 50%, better vendor relationships",
+  Implementation_Complexity = "Low"
+))
+
+recommendations <- rbind(recommendations, data.frame(
+  Priority = "MEDIUM", 
+  Issue = "Uneven workload distribution among AP team members",
+  Impact_Level = "Medium",
+  Recommendation = "Implement workload balancing system + cross-training program + performance metrics dashboard",
+  Expected_Benefit = "Improve team efficiency by 25%, reduce bottlenecks, better resource utilization",
+  Implementation_Complexity = "Medium"
+))
+
+recommendations <- rbind(recommendations, data.frame(
+  Priority = "LOW",
+  Issue = "Inconsistent process paths and variants",
+  Impact_Level = "Low",
+  Recommendation = "Process standardization + best practice documentation + regular process audits",
+  Expected_Benefit = "Increase process predictability, reduce training time, easier monitoring",
+  Implementation_Complexity = "Low"
+))
+
+write.csv(recommendations, "process_improvement_recommendations.csv", row.names = FALSE)
+
+print("Process improvement recommendations saved to 'process_improvement_recommendations.csv'")
+## [1] "Process improvement recommendations saved to 'process_improvement_recommendations.csv'"
+quick_wins <- list()
+
+# Identify immediate improvement opportunities
+quick_wins$vendor_training <- vendor_analysis %>%
+  filter(invoice_count >= 5 & rejection_rate > 20) %>%
+  nrow()
+
+quick_wins$workload_balancing <- user_workload %>%
+  filter(n_activities > mean(n_activities) * 1.5) %>%
+  nrow()
+
+quick_wins$process_standardization <- process_paths %>%
+  filter(n >= 5 & percentage < 5) %>%
+  nrow()
+
+print("Quick Wins Opportunities:")
+## [1] "Quick Wins Opportunities:"
+print(quick_wins)
+## $vendor_training
+## [1] 261
+## 
+## $workload_balancing
+## [1] 44
+## 
+## $process_standardization
+## [1] 341
+cat("All analysis files have been generated and saved successfully.\n")
+## All analysis files have been generated and saved successfully.
+cat("- INN354_case_statistics_detailed.csv\n")
+## - INN354_case_statistics_detailed.csv
+cat("- activity_frequency_analysis.csv\n")
+## - activity_frequency_analysis.csv
+cat("- process_variants_analysis.csv\n")
+## - process_variants_analysis.csv
+cat("- approval_process_analysis.csv\n")
+## - approval_process_analysis.csv
+cat("- vendor_performance_analysis.csv\n")
+## - vendor_performance_analysis.csv
+cat("- user_workload_analysis.csv\n")
+## - user_workload_analysis.csv
+cat("- bottleneck_analysis.csv\n")
+## - bottleneck_analysis.csv
+cat("- process_improvement_recommendations.csv\n")
+## - process_improvement_recommendations.csv
+cat("- Multiple visualization PNG files\n\n")
+## - Multiple visualization PNG files
+cat("=== KEY INSIGHTS FOR YOUR POWERPOINT REPORT ===\n")
+## === KEY INSIGHTS FOR YOUR POWERPOINT REPORT ===
+## === KEY INSIGHTS FOR YOUR POWERPOINT REPORT ===
+cat("1. Process Volume: ", summary_report$process_volume, " invoices analyzed\n")
+## 1. Process Volume:  57417  invoices analyzed
+## 1. Process Volume:  57417  invoices analyzed
+cat("2. Average Processing Time: ", summary_report$avg_throughput_days, " days\n")
+## 2. Average Processing Time:  8.89  days
+## 2. Average Processing Time:  8.89  days
+cat("3. Approval Rate: ", summary_report$approval_rate, "%\n")
+## 3. Approval Rate:  88.67 %
+## 3. Approval Rate:  88.67 %
+cat("4. Rework Rate: ", summary_report$rework_rate, "%\n")
+## 4. Rework Rate:  11.69 %
+## 4. Rework Rate:  11.69 %
+cat("5. Manual Posting Rate: ", summary_report$manual_posting_rate, "%\n")
+## 5. Manual Posting Rate:  14.73 %
+## 5. Manual Posting Rate:  14.73 %
+cat("6. Process Variants: ", summary_report$process_variants, " different process paths identified\n")
+## 6. Process Variants:  2490  different process paths identified
+## 6. Process Variants:  2490  different process paths identified
+cat("7. Top 3 efficiency issues identified with specific recommendations\n")
+## 7. Top 3 efficiency issues identified with specific recommendations
+## 7. Top 3 efficiency issues identified with specific recommendations
+cat("8. Quick wins identified for immediate implementation\n")
+## 8. Quick wins identified for immediate implementation
+## 8. Quick wins identified for immediate implementation
+# GRAPH 1: PROCESSING TIME DISTRIBUTION
+library(ggplot2)
+library(dplyr)
+library(scales)
+
+# Load and prepare data
+raw_data <- read.csv("INN354 2025H Event log.csv")
+raw_data$timestamp <- as.POSIXct(strptime(raw_data$timestamp, "%Y-%m-%dT%H:%M:%SZ"))
+raw_data$invoice_date <- as.POSIXct(strptime(raw_data$invoice_date, "%Y-%m-%dT%H:%M:%SZ"))
+
+# Calculate throughput times
+throughput_data <- raw_data %>%
+  group_by(invoice_id) %>%
+  summarise(
+    throughput_days = as.numeric(difftime(max(timestamp), min(timestamp), units = "days")),
+    invoice_amount = first(invoice_amount)
+  )
+
+# Create histogram
+p1 <- ggplot(throughput_data, aes(x = throughput_days)) +
+  geom_histogram(bins = 30, fill = "#2E86AB", alpha = 0.8, color = "white") +
+  geom_vline(aes(xintercept = median(throughput_days, na.rm = TRUE)), 
+             color = "#A23B72", linetype = "dashed", size = 1) +
+  labs(
+    title = "Invoice Processing Time Distribution",
+    subtitle = "Elkjop Nordic Accounts Payable Process",
+    x = "Processing Time (Days)",
+    y = "Number of Invoices",
+    caption = paste("Median processing time:", round(median(throughput_data$throughput_days, na.rm = TRUE), 1), "days")
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(face = "bold", size = 14),
+    plot.subtitle = element_text(color = "gray40")
+  )
+
+print(p1)
+
+
+ggsave("1_throughput_time_distribution.png", p1, width = 10, height = 6, dpi = 300)
+# GRAPH 4: PROCESS STAGE DURATION ANALYSIS
+library(ggplot2)
+library(dplyr)
+
+# Define process stages
+stage_data <- raw_data %>%
+  mutate(
+    process_stage = case_when(
+      activity_id %in% c("Data management", "Get goods receipt from WM", "Initial validation") ~ "Preparation",
+      activity_id %in% c("Sent for approval", "On hold at approver") ~ "Approval",
+      activity_id %in% c("Approved", "Approval rejected") ~ "Decision",
+      activity_id %in% c("FI Posted Automatically", "Posted manually") ~ "Posting",
+      TRUE ~ "Other"
+    )
+  ) %>%
+  group_by(invoice_id, process_stage) %>%
+  summarise(
+    stage_duration = as.numeric(difftime(max(timestamp), min(timestamp), units = "days"))
+  ) %>%
+  group_by(process_stage) %>%
+  summarise(
+    avg_duration = mean(stage_duration, na.rm = TRUE)
+  )
+
+# Create stage duration plot
+p4 <- ggplot(stage_data, aes(x = reorder(process_stage, -avg_duration), y = avg_duration)) +
+  geom_bar(stat = "identity", fill = "#FF6B6B", alpha = 0.8) +
+  labs(
+    title = "Average Duration by Process Stage",
+    subtitle = "Identifying bottlenecks in AP process",
+    x = "Process Stage",
+    y = "Average Duration (Days)"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(face = "bold", size = 14),
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  )
+
+print(p4)
+
+
+ggsave("4_process_stage_durations.png", p4, width = 10, height = 6, dpi = 300)
+# GRAPH 3: MOST FREQUENT ACTIVITIES
+library(ggplot2)
+library(dplyr)
+
+# Calculate activity frequencies
+activity_freq <- raw_data %>%
+  count(activity_id, sort = TRUE) %>%
+  head(15)
+
+# Create bar plot
+p3 <- ggplot(activity_freq, aes(x = reorder(activity_id, n), y = n)) +
+  geom_bar(stat = "identity", fill = "#3DCCC7", alpha = 0.8) +
+  coord_flip() +
+  labs(
+    title = "Most Frequent Process Activities",
+    subtitle = "Top 15 activities in AP process",
+    x = "Activity",
+    y = "Frequency"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(face = "bold", size = 14),
+    axis.text.y = element_text(size = 9)
+  )
+
+print(p3)
+```
+
+
+```{r}
+# ANALYSIS OF INVOICES GOING TO FI MANUAL PROCESSING
+cat("=== ANALYSIS OF INVOICES FOR FI MANUAL PROCESSING ===\n")
+
+# Load required libraries
+library(dplyr)
+library(ggplot2)
+library(scales)
+
+# Load and prepare data
+raw_data <- read.csv("INN354 2025H Event log.csv")
+raw_data$timestamp <- as.POSIXct(strptime(raw_data$timestamp, "%Y-%m-%dT%H:%M:%SZ"))
+raw_data$invoice_date <- as.POSIXct(strptime(raw_data$invoice_date, "%Y-%m-%dT%H:%M:%SZ"))
+
+# Identify invoices that go to FI manual processing
+manual_processing_invoices <- raw_data %>%
+  filter(activity_id == "FI for Manual processing after initial check") %>%
+  distinct(invoice_id) %>%
+  pull(invoice_id)
+
+cat("Number of invoices going to FI manual processing:", length(manual_processing_invoices), "\n")
+
+# Get detailed data for manual processing invoices
+manual_processing_data <- raw_data %>%
+  filter(invoice_id %in% manual_processing_invoices) %>%
+  group_by(invoice_id) %>%
+  summarise(
+    vendor_id = first(vendor_id),
+    invoice_amount = first(invoice_amount),
+    gl_account = first(gl_account),
+    cost_center = first(cost_center_id),
+    currency = first(currency_id),
+    first_approver = first(first_approver_id),
+    process_start = min(timestamp),
+    process_end = max(timestamp),
+    n_activities = n(),
+    has_approval_rejection = any(activity_id == "Approval rejected"),
+    has_on_hold = any(activity_id == "On hold at approver"),
+    final_status = last(activity_id)
+  ) %>%
+  mutate(
+    processing_days = as.numeric(difftime(process_end, process_start, units = "days"))
+  )
+
+# 1. AMOUNT ANALYSIS FOR MANUAL PROCESSING INVOICES
+cat("\n=== 1. AMOUNT ANALYSIS ===\n")
+
+amount_analysis <- manual_processing_data %>%
+  summarise(
+    total_invoices = n(),
+    avg_amount = mean(invoice_amount, na.rm = TRUE),
+    median_amount = median(invoice_amount, na.rm = TRUE),
+    min_amount = min(invoice_amount, na.rm = TRUE),
+    max_amount = max(invoice_amount, na.rm = TRUE),
+    total_amount = sum(invoice_amount, na.rm = TRUE),
+    std_dev_amount = sd(invoice_amount, na.rm = TRUE)
+  )
+
+print("Manual Processing Invoice Amount Statistics:")
+print(amount_analysis)
+
+# Amount distribution by categories
+amount_categories <- manual_processing_data %>%
+  mutate(
+    amount_category = case_when(
+      invoice_amount <= 1000 ~ "Small (≤1,000)",
+      invoice_amount <= 10000 ~ "Medium (1,001-10,000)",
+      invoice_amount <= 50000 ~ "Large (10,001-50,000)",
+      invoice_amount <= 100000 ~ "Very Large (50,001-100,000)",
+      TRUE ~ "Extreme (>100,000)"
+    )
+  ) %>%
+  count(amount_category, sort = TRUE) %>%
+  mutate(percentage = n / sum(n) * 100)
+
+print("Manual Processing Invoices by Amount Category:")
+print(amount_categories)
+
+# 2. SUPPLIER/VENDOR ANALYSIS FOR MANUAL PROCESSING
+cat("\n=== 2. SUPPLIER/VENDOR ANALYSIS ===\n")
+
+vendor_analysis <- manual_processing_data %>%
+  group_by(vendor_id) %>%
+  summarise(
+    invoice_count = n(),
+    total_amount = sum(invoice_amount, na.rm = TRUE),
+    avg_amount = mean(invoice_amount, na.rm = TRUE),
+    median_amount = median(invoice_amount, na.rm = TRUE),
+    min_amount = min(invoice_amount, na.rm = TRUE),
+    max_amount = max(invoice_amount, na.rm = TRUE),
+    percentage_of_total_manual = n() / nrow(manual_processing_data) * 100
+  ) %>%
+  arrange(desc(invoice_count))
+
+print("Top 20 Suppliers by Manual Processing Volume:")
+print(vendor_analysis %>% head(20))
+
+# Vendor concentration analysis
+vendor_concentration <- vendor_analysis %>%
+  summarise(
+    total_vendors = n_distinct(vendor_id),
+    top_10_vendor_coverage = sum(head(invoice_count, 10)) / sum(invoice_count) * 100,
+    top_20_vendor_coverage = sum(head(invoice_count, 20)) / sum(invoice_count) * 100,
+    avg_invoices_per_vendor = mean(invoice_count),
+    median_invoices_per_vendor = median(invoice_count)
+  )
+
+
+```
+
+
+
+
+```{r}
+print("Vendor Concentration Analysis:")
+print(vendor_concentration)
+
+# 3. COMPARISON WITH OVERALL PROCESS
+cat("\n=== 3. COMPARISON WITH OVERALL PROCESS ===\n")
+
+# Overall invoice statistics for comparison
+overall_invoice_stats <- raw_data %>%
+  group_by(invoice_id) %>%
+  summarise(
+    vendor_id = first(vendor_id),
+    invoice_amount = first(invoice_amount),
+    goes_to_manual = first(invoice_id) %in% manual_processing_invoices
+  ) %>%
+  group_by(goes_to_manual) %>%
+  summarise(
+    count = n(),
+    avg_amount = mean(invoice_amount, na.rm = TRUE),
+    median_amount = median(invoice_amount, na.rm = TRUE),
+    percentage_of_total = n() / nrow(.) * 100
+  )
+
+print("Comparison: Manual vs Automatic Processing:")
+print(overall_invoice_stats)
+
+# 4. GL ACCOUNT ANALYSIS
+cat("\n=== 4. GL ACCOUNT ANALYSIS ===\n")
+
+gl_account_analysis <- manual_processing_data %>%
+  group_by(gl_account) %>%
+  summarise(
+    invoice_count = n(),
+    total_amount = sum(invoice_amount, na.rm = TRUE),
+    avg_amount = mean(invoice_amount, na.rm = TRUE)
+  ) %>%
+  arrange(desc(invoice_count))
+
+print("Top GL Accounts for Manual Processing:")
+print(gl_account_analysis %>% head(15))
+
+# 5. PROCESS CHARACTERISTICS OF MANUAL PROCESSING INVOICES
+cat("\n=== 5. PROCESS CHARACTERISTICS ===\n")
+
+process_characteristics <- manual_processing_data %>%
+  summarise(
+    avg_processing_days = mean(processing_days, na.rm = TRUE),
+    median_processing_days = median(processing_days, na.rm = TRUE),
+    rejection_rate = sum(has_approval_rejection) / n() * 100,
+    on_hold_rate = sum(has_on_hold) / n() * 100,
+    avg_activities_per_case = mean(n_activities, na.rm = TRUE)
+  )
+
+print("Process Characteristics of Manual Processing Invoices:")
+print(process_characteristics)
+
+# Final status analysis
+final_status_analysis <- manual_processing_data %>%
+  count(final_status, sort = TRUE) %>%
+  mutate(percentage = n / sum(n) * 100)
+
+print("Final Status of Manual Processing Invoices:")
+print(final_status_analysis)
+
+# 6. VISUALIZATIONS
+cat("\n=== 6. CREATING VISUALIZATIONS ===\n")
+
+# Plot 1: Amount distribution of manual processing invoices
+p1 <- ggplot(manual_processing_data, aes(x = invoice_amount)) +
+  geom_histogram(bins = 30, fill = "#E76F51", alpha = 0.8) +
+  scale_x_continuous(labels = scales::comma) +
+  labs(
+    title = "Amount Distribution of Invoices Going to Manual Processing",
+    subtitle = "Financial impact of manual processing requirements",
+    x = "Invoice Amount",
+    y = "Number of Invoices"
+  ) +
+  theme_minimal()
+
+print(p1)
+ggsave("manual_processing_amount_distribution.png", p1, width = 10, height = 6, dpi = 300)
+
+# Plot 2: Top vendors for manual processing
+top_vendors_manual <- vendor_analysis %>% head(15)
+p2 <- ggplot(top_vendors_manual, aes(x = reorder(vendor_id, invoice_count), y = invoice_count)) +
+  geom_bar(stat = "identity", fill = "#2A9D8F", alpha = 0.8) +
+  coord_flip() +
+  labs(
+    title = "Top 15 Vendors Requiring Manual Processing",
+    subtitle = "Suppliers with highest manual processing volume",
+    x = "Vendor ID",
+    y = "Number of Invoices"
+  ) +
+  theme_minimal()
+
+print(p2)
+ggsave("manual_processing_top_vendors.png", p2, width = 10, height = 6, dpi = 300)
+
+# Plot 3: Amount categories for manual processing
+p3 <- ggplot(amount_categories, aes(x = reorder(amount_category, -n), y = n)) +
+  geom_bar(stat = "identity", fill = "#F4A261", alpha = 0.8) +
+  geom_text(aes(label = paste0(round(percentage, 1), "%")), vjust = -0.5, size = 3) +
+  labs(
+    title = "Manual Processing Invoices by Amount Category",
+    subtitle = "Distribution across different invoice value ranges",
+    x = "Amount Category",
+    y = "Number of Invoices"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+print(p3)
+ggsave("manual_processing_amount_categories.png", p3, width = 10, height = 6, dpi = 300)
+
+# Plot 4: Comparison with automatic processing
+p4 <- ggplot(overall_invoice_stats %>% filter(!is.na(goes_to_manual)), 
+             aes(x = goes_to_manual, y = avg_amount, fill = goes_to_manual)) +
+  geom_bar(stat = "identity", alpha = 0.8) +
+  scale_fill_manual(values = c("FALSE" = "#2A9D8F", "TRUE" = "#E76F51")) +
+  scale_y_continuous(labels = scales::comma) +
+  labs(
+    title = "Average Invoice Amount: Manual vs Automatic Processing",
+    subtitle = "Comparison of typical invoice values by processing type",
+    x = "Goes to Manual Processing",
+    y = "Average Invoice Amount",
+    fill = "Manual Processing"
+  ) +
+  theme_minimal()
+
+print(p4)
+ggsave("manual_vs_automatic_amount_comparison.png", p4, width = 10, height = 6, dpi = 300)
+
+# 7. DETAILED ANALYSIS OF TOP SUPPLIERS
+cat("\n=== 7. DETAILED TOP SUPPLIER ANALYSIS ===\n")
+
+# Get top 5 suppliers for detailed analysis
+top_suppliers <- vendor_analysis %>% head(5) %>% pull(vendor_id)
+
+top_suppliers_detailed <- manual_processing_data %>%
+  filter(vendor_id %in% top_suppliers) %>%
+  group_by(vendor_id) %>%
+  summarise(
+    invoice_count = n(),
+    total_amount = sum(invoice_amount, na.rm = TRUE),
+    avg_amount = mean(invoice_amount, na.rm = TRUE),
+    median_amount = median(invoice_amount, na.rm = TRUE),
+    min_amount = min(invoice_amount, na.rm = TRUE),
+    max_amount = max(invoice_amount, na.rm = TRUE),
+    avg_processing_days = mean(processing_days, na.rm = TRUE),
+    rejection_rate = sum(has_approval_rejection) / n() * 100
+  )
+
+print("Detailed Analysis of Top 5 Suppliers for Manual Processing:")
+print(top_suppliers_detailed)
+
+# 8. SUMMARY REPORT
+cat("\n=== 8. SUMMARY REPORT ===\n")
+
+summary_report <- list(
+  total_manual_processing_invoices = nrow(manual_processing_data),
+  percentage_of_total_invoices = nrow(manual_processing_data) / n_distinct(raw_data$invoice_id) * 100,
+  total_amount_manual_processing = sum(manual_processing_data$invoice_amount, na.rm = TRUE),
+  average_amount_manual = mean(manual_processing_data$invoice_amount, na.rm = TRUE),
+  median_amount_manual = median(manual_processing_data$invoice_amount, na.rm = TRUE),
+  unique_vendors_manual_processing = n_distinct(manual_processing_data$vendor_id),
+  top_vendor_manual_processing = vendor_analysis$vendor_id[1],
+  top_vendor_count = vendor_analysis$invoice_count[1],
+  most_common_amount_category = amount_categories$amount_category[1],
+  average_processing_days_manual = mean(manual_processing_data$processing_days, na.rm = TRUE)
+)
+
+print("=== MANUAL PROCESSING INVOICES SUMMARY ===")
+print(summary_report)
+
+# Save detailed analysis results
+write.csv(manual_processing_data, "manual_processing_invoices_detailed.csv", row.names = FALSE)
+write.csv(vendor_analysis, "manual_processing_vendor_analysis.csv", row.names = FALSE)
+write.csv(amount_categories, "manual_processing_amount_categories.csv", row.names = FALSE)
+
+cat("\n=== ANALYSIS COMPLETE ===\n")
+cat("Key files saved:\n")
+cat("- manual_processing_invoices_detailed.csv\n")
+cat("- manual_processing_vendor_analysis.csv\n")
+cat("- manual_processing_amount_categories.csv\n")
+cat("- Multiple visualization PNG files\n")
+```
+
+```{r}
+
+```
+
+```{r}
+print("Vendor Concentration Analysis:")
+print(vendor_concentration)
+
+# 3. COMPARISON WITH OVERALL PROCESS
+cat("\n=== 3. COMPARISON WITH OVERALL PROCESS ===\n")
+
+# Overall invoice statistics for comparison
+overall_invoice_stats <- raw_data %>%
+  group_by(invoice_id) %>%
+  summarise(
+    vendor_id = first(vendor_id),
+    invoice_amount = first(invoice_amount),
+    goes_to_manual = first(invoice_id) %in% manual_processing_invoices
+  ) %>%
+  group_by(goes_to_manual) %>%
+  summarise(
+    count = n(),
+    avg_amount = mean(invoice_amount, na.rm = TRUE),
+    median_amount = median(invoice_amount, na.rm = TRUE),
+    percentage_of_total = n() / nrow(.) * 100
+  )
+
+print("Comparison: Manual vs Automatic Processing:")
+print(overall_invoice_stats)
+
+# 4. GL ACCOUNT ANALYSIS
+cat("\n=== 4. GL ACCOUNT ANALYSIS ===\n")
+
+gl_account_analysis <- manual_processing_data %>%
+  group_by(gl_account) %>%
+  summarise(
+    invoice_count = n(),
+    total_amount = sum(invoice_amount, na.rm = TRUE),
+    avg_amount = mean(invoice_amount, na.rm = TRUE)
+  ) %>%
+  arrange(desc(invoice_count))
+
+print("Top GL Accounts for Manual Processing:")
+print(gl_account_analysis %>% head(15))
+
+# 5. PROCESS CHARACTERISTICS OF MANUAL PROCESSING INVOICES
+cat("\n=== 5. PROCESS CHARACTERISTICS ===\n")
+
+process_characteristics <- manual_processing_data %>%
+  summarise(
+    avg_processing_days = mean(processing_days, na.rm = TRUE),
+    median_processing_days = median(processing_days, na.rm = TRUE),
+    rejection_rate = sum(has_approval_rejection) / n() * 100,
+    on_hold_rate = sum(has_on_hold) / n() * 100,
+    avg_activities_per_case = mean(n_activities, na.rm = TRUE)
+  )
+
+print("Process Characteristics of Manual Processing Invoices:")
+print(process_characteristics)
+
+# Final status analysis
+final_status_analysis <- manual_processing_data %>%
+  count(final_status, sort = TRUE) %>%
+  mutate(percentage = n / sum(n) * 100)
+
+print("Final Status of Manual Processing Invoices:")
+print(final_status_analysis)
+
+# 6. VISUALIZATIONS
+cat("\n=== 6. CREATING VISUALIZATIONS ===\n")
+
+# Plot 1: Amount distribution of manual processing invoices
+p1 <- ggplot(manual_processing_data, aes(x = invoice_amount)) +
+  geom_histogram(bins = 30, fill = "#E76F51", alpha = 0.8) +
+  scale_x_continuous(labels = scales::comma) +
+  labs(
+    title = "Amount Distribution of Invoices Going to Manual Processing",
+    subtitle = "Financial impact of manual processing requirements",
+    x = "Invoice Amount",
+    y = "Number of Invoices"
+  ) +
+  theme_minimal()
+
+print(p1)
+ggsave("manual_processing_amount_distribution.png", p1, width = 10, height = 6, dpi = 300)
+
+# Plot 2: Top vendors for manual processing
+top_vendors_manual <- vendor_analysis %>% head(15)
+p2 <- ggplot(top_vendors_manual, aes(x = reorder(vendor_id, invoice_count), y = invoice_count)) +
+  geom_bar(stat = "identity", fill = "#2A9D8F", alpha = 0.8) +
+  coord_flip() +
+  labs(
+    title = "Top 15 Vendors Requiring Manual Processing",
+    subtitle = "Suppliers with highest manual processing volume",
+    x = "Vendor ID",
+    y = "Number of Invoices"
+  ) +
+  theme_minimal()
+
+print(p2)
+ggsave("manual_processing_top_vendors.png", p2, width = 10, height = 6, dpi = 300)
+
+# Plot 3: Amount categories for manual processing
+p3 <- ggplot(amount_categories, aes(x = reorder(amount_category, -n), y = n)) +
+  geom_bar(stat = "identity", fill = "#F4A261", alpha = 0.8) +
+  geom_text(aes(label = paste0(round(percentage, 1), "%")), vjust = -0.5, size = 3) +
+  labs(
+    title = "Manual Processing Invoices by Amount Category",
+    subtitle = "Distribution across different invoice value ranges",
+    x = "Amount Category",
+    y = "Number of Invoices"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+print(p3)
+ggsave("manual_processing_amount_categories.png", p3, width = 10, height = 6, dpi = 300)
+
+# Plot 4: Comparison with automatic processing
+p4 <- ggplot(overall_invoice_stats %>% filter(!is.na(goes_to_manual)), 
+             aes(x = goes_to_manual, y = avg_amount, fill = goes_to_manual)) +
+  geom_bar(stat = "identity", alpha = 0.8) +
+  scale_fill_manual(values = c("FALSE" = "#2A9D8F", "TRUE" = "#E76F51")) +
+  scale_y_continuous(labels = scales::comma) +
+  labs(
+    title = "Average Invoice Amount: Manual vs Automatic Processing",
+    subtitle = "Comparison of typical invoice values by processing type",
+    x = "Goes to Manual Processing",
+    y = "Average Invoice Amount",
+    fill = "Manual Processing"
+  ) +
+  theme_minimal()
+
+print(p4)
+ggsave("manual_vs_automatic_amount_comparison.png", p4, width = 10, height = 6, dpi = 300)
+
+# 7. DETAILED ANALYSIS OF TOP SUPPLIERS
+cat("\n=== 7. DETAILED TOP SUPPLIER ANALYSIS ===\n")
+
+# Get top 5 suppliers for detailed analysis
+top_suppliers <- vendor_analysis %>% head(5) %>% pull(vendor_id)
+
+top_suppliers_detailed <- manual_processing_data %>%
+  filter(vendor_id %in% top_suppliers) %>%
+  group_by(vendor_id) %>%
+  summarise(
+    invoice_count = n(),
+    total_amount = sum(invoice_amount, na.rm = TRUE),
+    avg_amount = mean(invoice_amount, na.rm = TRUE),
+    median_amount = median(invoice_amount, na.rm = TRUE),
+    min_amount = min(invoice_amount, na.rm = TRUE),
+    max_amount = max(invoice_amount, na.rm = TRUE),
+    avg_processing_days = mean(processing_days, na.rm = TRUE),
+    rejection_rate = sum(has_approval_rejection) / n() * 100
+  )
+
+print("Detailed Analysis of Top 5 Suppliers for Manual Processing:")
+print(top_suppliers_detailed)
+
+# 8. SUMMARY REPORT
+cat("\n=== 8. SUMMARY REPORT ===\n")
+
+summary_report <- list(
+  total_manual_processing_invoices = nrow(manual_processing_data),
+  percentage_of_total_invoices = nrow(manual_processing_data) / n_distinct(raw_data$invoice_id) * 100,
+  total_amount_manual_processing = sum(manual_processing_data$invoice_amount, na.rm = TRUE),
+  average_amount_manual = mean(manual_processing_data$invoice_amount, na.rm = TRUE),
+  median_amount_manual = median(manual_processing_data$invoice_amount, na.rm = TRUE),
+  unique_vendors_manual_processing = n_distinct(manual_processing_data$vendor_id),
+  top_vendor_manual_processing = vendor_analysis$vendor_id[1],
+  top_vendor_count = vendor_analysis$invoice_count[1],
+  most_common_amount_category = amount_categories$amount_category[1],
+  average_processing_days_manual = mean(manual_processing_data$processing_days, na.rm = TRUE)
+)
+
+print("=== MANUAL PROCESSING INVOICES SUMMARY ===")
+print(summary_report)
+
+# Save detailed analysis results
+write.csv(manual_processing_data, "manual_processing_invoices_detailed.csv", row.names = FALSE)
+write.csv(vendor_analysis, "manual_processing_vendor_analysis.csv", row.names = FALSE)
+write.csv(amount_categories, "manual_processing_amount_categories.csv", row.names = FALSE)
+
+
+```
+
+
+```{r}
+ 
+
+```
+
+```{r}
+cat("\n=== ANALYSIS COMPLETE ===\n")
+cat("Key files saved:\n")
+cat("- manual_processing_invoices_detailed.csv\n")
+cat("- manual_processing_vendor_analysis.csv\n")
+cat("- manual_processing_amount_categories.csv\n")
+cat("- Multiple visualization PNG files\n")
+```
+
+
+
+```{r}
+# GL ACCOUNT ANALYSIS PLOTS FOR MANUAL PROCESSING INVOICES
+cat("=== GL ACCOUNT ANALYSIS VISUALIZATIONS ===\n")
+
+# Load required libraries
+library(ggplot2)
+library(dplyr)
+library(scales)
+library(forcats)
+
+# Calculate GL account statistics for manual processing invoices
+gl_account_analysis <- manual_processing_data %>%
+  group_by(gl_account) %>%
+  summarise(
+    invoice_count = n(),
+    total_amount = sum(invoice_amount, na.rm = TRUE),
+    avg_amount = mean(invoice_amount, na.rm = TRUE)
+  ) %>%
+  arrange(desc(invoice_count))
+
+# Filter for meaningful analysis (remove NA and very small counts)
+gl_account_analysis_clean <- gl_account_analysis %>%
+  filter(!is.na(gl_account) & invoice_count >= 5) %>%
+  arrange(desc(invoice_count))
+
+cat("GL Accounts with significant manual processing volume:", nrow(gl_account_analysis_clean), "\n")
+
+# PLOT 1: TOP GL ACCOUNTS BY INVOICE COUNT
+p1 <- ggplot(gl_account_analysis_clean %>% head(15), 
+             aes(x = fct_reorder(gl_account, invoice_count), y = invoice_count)) +
+  geom_bar(stat = "identity", fill = "#2E86AB", alpha = 0.8) +
+  geom_text(aes(label = invoice_count), hjust = -0.2, size = 3.5, fontface = "bold") +
+  coord_flip() +
+  labs(
+    title = "Top GL Accounts by Manual Processing Volume",
+    subtitle = "General Ledger accounts with highest number of manual processing invoices",
+    x = "GL Account",
+    y = "Number of Invoices"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(face = "bold", size = 14, color = "#2E86AB"),
+    plot.subtitle = element_text(size = 10, color = "gray40"),
+    axis.text.y = element_text(size = 9),
+    panel.grid.major.y = element_blank()
+  ) +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.1)))
+
+#print(p1)
+ggsave("gl_account_invoice_count.png", p1, width = 12, height = 8, dpi = 300)
+
+# PLOT 2: TOP GL ACCOUNTS BY TOTAL AMOUNT
+p2 <- ggplot(gl_account_analysis_clean %>% 
+               arrange(desc(total_amount)) %>% 
+               head(15), 
+             aes(x = fct_reorder(gl_account, total_amount), y = total_amount)) +
+  geom_bar(stat = "identity", fill = "#A23B72", alpha = 0.8) +
+  geom_text(aes(label = scales::comma(round(total_amount))), hjust = -0.2, size = 3.5, fontface = "bold") +
+  coord_flip() +
+  labs(
+    title = "Top GL Accounts by Total Manual Processing Amount",
+    subtitle = "General Ledger accounts with highest total value of manual processing invoices",
+    x = "GL Account",
+    y = "Total Amount"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(face = "bold", size = 14, color = "#A23B72"),
+    plot.subtitle = element_text(size = 10, color = "gray40"),
+    axis.text.y = element_text(size = 9),
+    panel.grid.major.y = element_blank()
+  ) +
+  scale_y_continuous(labels = scales::comma, expand = expansion(mult = c(0, 0.1)))
+
+#print(p2)
+ggsave("gl_account_total_amount.png", p2, width = 12, height = 8, dpi = 300)
+
+# PLOT 3: TOP GL ACCOUNTS BY AVERAGE AMOUNT
+p3 <- ggplot(gl_account_analysis_clean %>% 
+               arrange(desc(avg_amount)) %>% 
+               head(15), 
+             aes(x = fct_reorder(gl_account, avg_amount), y = avg_amount)) +
+  geom_bar(stat = "identity", fill = "#F18F01", alpha = 0.8) +
+  geom_text(aes(label = scales::comma(round(avg_amount))), hjust = -0.2, size = 3.5, fontface = "bold") +
+  coord_flip() +
+  labs(
+    title = "Top GL Accounts by Average Invoice Amount",
+    subtitle = "General Ledger accounts with highest average value per manual processing invoice",
+    x = "GL Account",
+    y = "Average Invoice Amount"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(face = "bold", size = 14, color = "#F18F01"),
+    plot.subtitle = element_text(size = 10, color = "gray40"),
+    axis.text.y = element_text(size = 9),
+    panel.grid.major.y = element_blank()
+  ) +
+  scale_y_continuous(labels = scales::comma, expand = expansion(mult = c(0, 0.1)))
+
+#print(p3)
+ggsave("gl_account_avg_amount.png", p3, width = 12, height = 8, dpi = 300)
+
+# PLOT 4: BUBBLE CHART - RELATIONSHIP BETWEEN COUNT, TOTAL AMOUNT, AND AVERAGE AMOUNT
+top_gl_accounts <- gl_account_analysis_clean %>% head(20)
+
+p4 <- ggplot(top_gl_accounts, 
+             aes(x = invoice_count, y = total_amount, size = avg_amount, color = gl_account)) +
+  geom_point(alpha = 0.7) +
+  geom_text(aes(label = gl_account), hjust = -0.2, vjust = 0.5, size = 3, check_overlap = TRUE) +
+  scale_size_continuous(name = "Average Amount", range = c(3, 10), labels = scales::comma) +
+  scale_color_viridis_d(guide = "none") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  labs(
+    title = "GL Account Analysis: Volume vs Value Relationship",
+    subtitle = "Bubble size represents average invoice amount",
+    x = "Number of Invoices (Volume)",
+    y = "Total Amount (Value)",
+    size = "Average Amount"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(face = "bold", size = 14),
+    legend.position = "bottom"
+  )
+
+#print(p4)
+ggsave("gl_account_bubble_chart.png", p4, width = 12, height = 8, dpi = 300)
+
+# PLOT 5: HEATMAP STYLE - COMPREHENSIVE VIEW
+p5 <- ggplot(top_gl_accounts, 
+             aes(x = invoice_count, y = reorder(gl_account, invoice_count))) +
+  geom_point(aes(size = total_amount, color = avg_amount), alpha = 0.7) +
+  scale_size_continuous(name = "Total Amount", range = c(3, 12), labels = scales::comma) +
+  scale_color_gradient(name = "Average Amount", low = "#FF6B6B", high = "#4ECDC4", labels = scales::comma) +
+  labs(
+    title = "GL Account Risk & Impact Matrix",
+    subtitle = "Size = Total Amount, Color = Average Amount",
+    x = "Number of Invoices (Frequency)",
+    y = "GL Account"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(face = "bold", size = 14),
+    axis.text.y = element_text(size = 9),
+    legend.position = "bottom",
+    legend.box = "vertical"
+  )
+
+#print(p5)
+ggsave("gl_account_heatmap.png", p5, width = 12, height = 8, dpi = 300)
+
+# PLOT 6: PIE CHART - DISTRIBUTION OF MANUAL PROCESSING BY TOP GL ACCOUNTS
+top_10_gl <- gl_account_analysis_clean %>% head(10)
+other_gl <- data.frame(
+  gl_account = "Other GL Accounts",
+  invoice_count = sum(gl_account_analysis_clean$invoice_count[11:nrow(gl_account_analysis_clean)]),
+  total_amount = sum(gl_account_analysis_clean$total_amount[11:nrow(gl_account_analysis_clean)]),
+  avg_amount = NA
+)
+
+pie_data <- bind_rows(top_10_gl, other_gl) %>%
+  mutate(percentage = invoice_count / sum(invoice_count) * 100)
+
+p6 <- ggplot(pie_data, aes(x = "", y = invoice_count, fill = fct_reorder(gl_account, invoice_count))) +
+  geom_bar(stat = "identity", width = 1, alpha = 0.8) +
+  coord_polar("y", start = 0) +
+  geom_text(aes(label = paste0(round(percentage, 1), "%")), 
+            position = position_stack(vjust = 0.5), size = 3.5, fontface = "bold") +
+  scale_fill_viridis_d(name = "GL Account") +
+  labs(
+    title = "Distribution of Manual Processing by GL Account",
+    subtitle = "Top 10 GL accounts and remaining accounts",
+    x = NULL,
+    y = NULL
+  ) +
+  theme_void() +
+  theme(
+    plot.title = element_text(face = "bold", size = 14, hjust = 0.5),
+    plot.subtitle = element_text(hjust = 0.5, color = "gray40"),
+    legend.position = "right"
+  )
+
+#print(p6)
+ggsave("gl_account_pie_chart.png", p6, width = 10, height = 8, dpi = 300)
+
+# PLOT 7: FACETED ANALYSIS - COMPARING METRICS ACROSS TOP GL ACCOUNTS
+top_8_gl <- gl_account_analysis_clean %>% head(8)
+
+facet_data <- top_8_gl %>%
+  select(gl_account, invoice_count, total_amount, avg_amount) %>%
+  tidyr::pivot_longer(cols = c(invoice_count, total_amount, avg_amount), 
+                      names_to = "metric", 
+                      values_to = "value") %>%
+  mutate(
+    metric = factor(metric, 
+                   levels = c("invoice_count", "total_amount", "avg_amount"),
+                   labels = c("Invoice Count", "Total Amount", "Average Amount"))
+  )
+
+p7 <- ggplot(facet_data, aes(x = reorder(gl_account, value), y = value, fill = metric)) +
+  geom_bar(stat = "identity", alpha = 0.8) +
+  facet_wrap(~metric, scales = "free", ncol = 1) +
+  coord_flip() +
+  scale_fill_manual(values = c("#2E86AB", "#A23B72", "#F18F01")) +
+  labs(
+    title = "Comprehensive GL Account Analysis",
+    subtitle = "Comparison across three key metrics",
+    x = "GL Account",
+    y = "Value",
+    fill = "Metric"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(face = "bold", size = 14),
+    strip.text = element_text(face = "bold", size = 10),
+    legend.position = "none",
+    axis.text.y = element_text(size = 8)
+  ) +
+  scale_y_continuous(labels = scales::comma)
+
+#print(p7)
+ggsave("gl_account_faceted.png", p7, width = 10, height = 12, dpi = 300)
+
+# PLOT 8: TREEMAP VISUALIZATION
+library(treemapify)
+
+p8 <- ggplot(top_10_gl, 
+             aes(area = total_amount, fill = avg_amount, 
+                 label = paste0(gl_account, "\n", scales::comma(round(total_amount))))) +
+  geom_treemap(alpha = 0.8) +
+  geom_treemap_text(color = "white", fontface = "bold", place = "center", grow = TRUE) +
+  scale_fill_gradient(name = "Average Amount", low = "#FF6B6B", high = "#4ECDC4", labels = scales::comma) +
+  labs(
+    title = "GL Account Financial Impact Treemap",
+    subtitle = "Area size represents total amount, color represents average amount",
+    fill = "Average Amount"
+  ) +
+  theme(
+    plot.title = element_text(face = "bold", size = 14, hjust = 0.5),
+    plot.subtitle = element_text(hjust = 0.5, color = "gray40"),
+    legend.position = "bottom"
+  )
+
+#print(p8)
+ggsave("gl_account_treemap.png", p8, width = 12, height = 8, dpi = 300)
+
+# SUMMARY STATISTICS
+cat("\n=== GL ACCOUNT ANALYSIS SUMMARY ===\n")
+cat("Total GL accounts with manual processing:", nrow(gl_account_analysis_clean), "\n")
+cat("Top GL account by invoice count:", gl_account_analysis_clean$gl_account[1], 
+    "(", gl_account_analysis_clean$invoice_count[1], "invoices)\n")
+cat("Top GL account by total amount:", gl_account_analysis_clean %>% 
+      arrange(desc(total_amount)) %>% .$gl_account[1],
+    "(", scales::comma(round(gl_account_analysis_clean %>% 
+                             arrange(desc(total_amount)) %>% .$total_amount[1])), ")\n")
+cat("Top GL account by average amount:", gl_account_analysis_clean %>% 
+      arrange(desc(avg_amount)) %>% .$gl_account[1],
+    "(", scales::comma(round(gl_account_analysis_clean %>% 
+                             arrange(desc(avg_amount)) %>% .$avg_amount[1])), ")\n")
+
+# Save the GL account analysis data
+write.csv(gl_account_analysis_clean, "gl_account_manual_processing_analysis.csv", row.names = FALSE)
+
+
+
+
+
+
+```
+
+
+
+```{r}
+print(p1)
+
+```
+
+
+
+
+```{r}
+print(p2)
+```
+
+
+
+```{r}
+print(p3)
+```
+```{r}
+print(p4)
+```
+
+```{r}
+print(p5)
+```
+```{r}
+print(p6)
+```
+
+
+```{r}
+# PROCESSING TIME STATISTICS VISUALIZATIONS
+cat("=== PROCESSING TIME STATISTICS VISUALIZATIONS ===\n")
+
+# Load required libraries
+library(ggplot2)
+library(dplyr)
+library(scales)
+library(patchwork)
+library(reshape2)
+
+# Calculate processing time statistics
+processing_stats <- manual_processing_data %>%
+  summarise(
+    avg_processing_days = mean(processing_days, na.rm = TRUE),
+    median_processing_days = median(processing_days, na.rm = TRUE),
+    min_processing_days = min(processing_days, na.rm = TRUE),
+    max_processing_days = max(processing_days, na.rm = TRUE),
+    std_dev_days = sd(processing_days, na.rm = TRUE),
+    p95_processing_days = quantile(processing_days, 0.95, na.rm = TRUE),
+    p75_processing_days = quantile(processing_days, 0.75, na.rm = TRUE),
+    p25_processing_days = quantile(processing_days, 0.25, na.rm = TRUE)
+  )
+
+print("Processing Time Statistics for Manual Processing Invoices:")
+print(processing_stats)
+
+# Create a summary data frame for plotting
+stats_summary <- data.frame(
+  Metric = c("Average", "Median", "Minimum", "Maximum", "Std Dev", 
+             "25th Percentile", "75th Percentile", "95th Percentile"),
+  Days = c(processing_stats$avg_processing_days,
+           processing_stats$median_processing_days,
+           processing_stats$min_processing_days,
+           processing_stats$max_processing_days,
+           processing_stats$std_dev_days,
+           processing_stats$p25_processing_days,
+           processing_stats$p75_processing_days,
+           processing_stats$p95_processing_days),
+  Type = c("Central Tendency", "Central Tendency", "Range", "Range", 
+           "Variability", "Percentile", "Percentile", "Percentile")
+)
+
+# PLOT 1: COMPREHENSIVE STATISTICS BAR CHART
+p1 <- ggplot(stats_summary, aes(x = reorder(Metric, Days), y = Days, fill = Type)) +
+  geom_bar(stat = "identity", alpha = 0.8) +
+  geom_text(aes(label = round(Days, 1)), hjust = -0.2, size = 4, fontface = "bold") +
+  coord_flip() +
+  scale_fill_manual(values = c("Central Tendency" = "#2E86AB", 
+                              "Range" = "#A23B72", 
+                              "Variability" = "#F18F01",
+                              "Percentile" = "#4ECDC4")) +
+  labs(
+    title = "Comprehensive Processing Time Statistics",
+    subtitle = "Manual Processing Invoices - Key Performance Metrics",
+    x = "Statistical Metric",
+    y = "Processing Time (Days)",
+    fill = "Metric Type"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(face = "bold", size = 16, color = "#2E86AB"),
+    plot.subtitle = element_text(size = 12, color = "gray40"),
+    axis.text.y = element_text(size = 10, face = "bold"),
+    legend.position = "bottom"
+  ) +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.15)))
+
+print(p1)
+ggsave("processing_time_comprehensive_stats.png", p1, width = 12, height = 8, dpi = 300)
+
+# PLOT 2: CENTRAL TENDENCY AND RANGE COMPARISON
+central_range_stats <- stats_summary %>% 
+  filter(Metric %in% c("Average", "Median", "Minimum", "Maximum"))
+
+p2 <- ggplot(central_range_stats, aes(x = Metric, y = Days, fill = Metric)) +
+  geom_bar(stat = "identity", alpha = 0.8, width = 0.7) +
+  geom_text(aes(label = round(Days, 1)), vjust = -0.5, size = 5, fontface = "bold") +
+  scale_fill_manual(values = c("Average" = "#2E86AB", 
+                              "Median" = "#4ECDC4",
+                              "Minimum" = "#06D6A0",
+                              "Maximum" = "#E63946")) +
+  labs(
+    title = "Central Tendency and Range Analysis",
+    subtitle = "Comparison of average, median, min, and max processing times",
+    x = "Metric",
+    y = "Processing Time (Days)"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(face = "bold", size = 14),
+    plot.subtitle = element_text(size = 11, color = "gray40"),
+    axis.text.x = element_text(size = 10, face = "bold"),
+    legend.position = "none"
+  ) +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.1)))
+
+print(p2)
+ggsave("processing_time_central_range.png", p2, width = 10, height = 8, dpi = 300)
+
+# PLOT 3: PERCENTILE DISTRIBUTION ANALYSIS
+percentile_stats <- stats_summary %>% 
+  filter(grepl("Percentile", Metric))
+
+p3 <- ggplot(percentile_stats, aes(x = Metric, y = Days, fill = Metric)) +
+  geom_bar(stat = "identity", alpha = 0.8, width = 0.6) +
+  geom_text(aes(label = paste0(round(Days, 1), " days")), vjust = -0.5, size = 4.5, fontface = "bold") +
+  scale_fill_manual(values = c("25th Percentile" = "#06D6A0",
+                              "75th Percentile" = "#FFD166", 
+                              "95th Percentile" = "#E63946")) +
+  labs(
+    title = "Processing Time Percentile Distribution",
+    subtitle = "Understanding the spread and outliers in processing times",
+    x = "Percentile",
+    y = "Processing Time (Days)"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(face = "bold", size = 14),
+    plot.subtitle = element_text(size = 11, color = "gray40"),
+    axis.text.x = element_text(size = 10, face = "bold"),
+    legend.position = "none"
+  ) +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.15)))
+
+print(p3)
+ggsave("processing_time_percentiles.png", p3, width = 10, height = 8, dpi = 300)
+
+# PLOT 4: STATISTICAL DISTRIBUTION VIOLIN PLOT WITH ANNOTATIONS
+p4 <- ggplot(manual_processing_data, aes(x = "", y = processing_days)) +
+  geom_violin(fill = "#2E86AB", alpha = 0.7, width = 0.8) +
+  geom_boxplot(width = 0.2, alpha = 0.8, outlier.shape = NA) +
+  geom_point(aes(x = "", y = processing_stats$avg_processing_days), 
+             color = "#E63946", size = 4, shape = 18) +
+  geom_point(aes(x = "", y = processing_stats$median_processing_days), 
+             color = "#4ECDC4", size = 4, shape = 17) +
+  geom_hline(yintercept = processing_stats$avg_processing_days, 
+             linetype = "dashed", color = "#E63946", alpha = 0.7) +
+  geom_hline(yintercept = processing_stats$median_processing_days, 
+             linetype = "dashed", color = "#4ECDC4", alpha = 0.7) +
+  annotate("text", x = 1.3, y = processing_stats$avg_processing_days, 
+           label = paste0("Avg: ", round(processing_stats$avg_processing_days, 1), " days"),
+           color = "#E63946", fontface = "bold", size = 4) +
+  annotate("text", x = 1.3, y = processing_stats$median_processing_days, 
+           label = paste0("Median: ", round(processing_stats$median_processing_days, 1), " days"),
+           color = "#4ECDC4", fontface = "bold", size = 4) +
+  annotate("text", x = 1.3, y = processing_stats$max_processing_days, 
+           label = paste0("Max: ", round(processing_stats$max_processing_days, 1), " days"),
+           color = "#A23B72", fontface = "bold", size = 3.5) +
+  labs(
+    title = "Processing Time Distribution with Key Statistics",
+    subtitle = "Violin plot showing density distribution with average and median markers",
+    x = NULL,
+    y = "Processing Time (Days)"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(face = "bold", size = 14),
+    plot.subtitle = element_text(size = 11, color = "gray40"),
+    axis.text.x = element_blank()
+  )
+
+print(p4)
+ggsave("processing_time_distribution.png", p4, width = 10, height = 8, dpi = 300)
+
+# PLOT 5: COMPARISON DASHBOARD - MULTIPLE METRICS
+# Prepare data for radar/spider chart (normalized)
+radar_data <- stats_summary %>%
+  filter(Metric %in% c("Average", "Median", "Minimum", "Maximum", "Std Dev")) %>%
+  mutate(Normalized = Days / max(Days))
+
+p5 <- ggplot(radar_data, aes(x = Metric, y = Normalized, group = 1)) +
+  geom_polygon(fill = "#2E86AB", alpha = 0.3, color = "#2E86AB", size = 1.2) +
+  geom_point(size = 3, color = "#2E86AB") +
+  geom_text(aes(label = paste0(round(Days, 1), "d")), vjust = -1, size = 3.5, fontface = "bold") +
+  coord_polar() +
+  labs(
+    title = "Processing Time Metrics Radar Chart",
+    subtitle = "Comparative view of key processing time statistics (normalized)",
+    x = NULL,
+    y = NULL
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(face = "bold", size = 14, hjust = 0.5),
+    plot.subtitle = element_text(hjust = 0.5, color = "gray40"),
+    axis.text.x = element_text(face = "bold", size = 10),
+    axis.text.y = element_blank(),
+    panel.grid.major = element_line(color = "gray80")
+  ) +
+  scale_y_continuous(limits = c(0, 1))
+
+print(p5)
+ggsave("processing_time_radar.png", p5, width = 10, height = 8, dpi = 300)
+
+# PLOT 6: STATISTICAL SUMMARY TABLE VISUALIZATION
+library(gridExtra)
+library(grid)
+
+# Create a formatted table for visualization
+summary_table <- stats_summary %>%
+  select(Metric, Days) %>%
+  mutate(Days = round(Days, 2),
+         Display = paste0(Days, " days"))
+
+table_plot <- tableGrob(summary_table, 
+                       rows = NULL,
+                       theme = ttheme_minimal(
+                         core = list(bg_params = list(fill = c("#F8F9FA", "#FFFFFF"), col = NA),
+                                    fg_params = list(fontface = c(rep("bold", 8), rep("plain", 8)))),
+                         colhead = list(bg_params = list(fill = "#2E86AB", col = NA),
+                                      fg_params = list(col = "white", fontface = "bold"))
+                       ))
+
+# Create a title for the table
+title <- textGrob("Processing Time Statistics Summary", 
+                  gp = gpar(fontsize = 16, fontface = "bold"))
+padding <- unit(0.5, "line")
+
+table_with_title <- gTree(children = gList(
+  rectGrob(gp = gpar(fill = "white", col = "white")),
+  title,
+  table_plot
+))
+
+# Save the table
+png("processing_time_summary_table.png", width = 800, height = 600, res = 150)
+grid.draw(table_with_title)
+dev.off()
+
+# PLOT 7: PROCESSING TIME DISTRIBUTION WITH STATISTICAL ANNOTATIONS
+p7 <- ggplot(manual_processing_data, aes(x = processing_days)) +
+  geom_histogram(bins = 30, fill = "#2E86AB", alpha = 0.7, color = "white") +
+  geom_density(aes(y = after_stat(count) * 2), color = "#E63946", size = 1.2) +
+  geom_vline(xintercept = processing_stats$avg_processing_days, 
+             color = "#E63946", linetype = "dashed", size = 1.2) +
+  geom_vline(xintercept = processing_stats$median_processing_days, 
+             color = "#4ECDC4", linetype = "dashed", size = 1.2) +
+  geom_vline(xintercept = processing_stats$p95_processing_days, 
+             color = "#F18F01", linetype = "dotted", size = 1) +
+  annotate("rect", xmin = processing_stats$avg_processing_days - processing_stats$std_dev_days,
+           xmax = processing_stats$avg_processing_days + processing_stats$std_dev_days,
+           ymin = 0, ymax = Inf, alpha = 0.2, fill = "#2E86AB") +
+  annotate("text", x = processing_stats$avg_processing_days, y = Inf,
+           label = paste0("Average\n", round(processing_stats$avg_processing_days, 1), " days"),
+           vjust = 2, color = "#E63946", fontface = "bold", size = 4) +
+  annotate("text", x = processing_stats$median_processing_days, y = Inf,
+           label = paste0("Median\n", round(processing_stats$median_processing_days, 1), " days"),
+           vjust = 4, color = "#4ECDC4", fontface = "bold", size = 4) +
+  annotate("text", x = processing_stats$p95_processing_days, y = Inf,
+           label = paste0("95th %ile\n", round(processing_stats$p95_processing_days, 1), " days"),
+           vjust = 6, color = "#F18F01", fontface = "bold", size = 4) +
+  labs(
+    title = "Processing Time Distribution with Statistical Markers",
+    subtitle = "Histogram with density curve and key statistical measures",
+    x = "Processing Time (Days)",
+    y = "Number of Invoices"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(face = "bold", size = 14),
+    plot.subtitle = element_text(size = 11, color = "gray40")
+  )
+
+print(p7)
+ggsave("processing_time_distribution_annotated.png", p7, width = 12, height = 8, dpi = 300)
+
+# PLOT 8: COMPARISON WITH TARGET SERVICE LEVEL
+# Assume target service level is 7 days (adjust as needed)
+target_sla <- 7
+
+sla_comparison <- data.frame(
+  Metric = c("Average", "Median", "95th Percentile", "Target SLA"),
+  Days = c(processing_stats$avg_processing_days,
+           processing_stats$median_processing_days,
+           processing_stats$p95_processing_days,
+           target_sla),
+  Type = c("Actual", "Actual", "Actual", "Target")
+)
+
+p8 <- ggplot(sla_comparison, aes(x = Metric, y = Days, fill = Type)) +
+  geom_bar(stat = "identity", alpha = 0.8, width = 0.6) +
+  geom_hline(yintercept = target_sla, linetype = "dashed", color = "#06D6A0", size = 1.2) +
+  geom_text(aes(label = paste0(round(Days, 1), " days")), vjust = -0.5, size = 4.5, fontface = "bold") +
+  scale_fill_manual(values = c("Actual" = "#2E86AB", "Target" = "#06D6A0")) +
+  labs(
+    title = "Processing Time vs Target Service Level",
+    subtitle = paste0("Comparison with target SLA of ", target_sla, " days"),
+    x = "Metric",
+    y = "Processing Time (Days)"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(face = "bold", size = 14),
+    plot.subtitle = element_text(size = 11, color = "gray40"),
+    axis.text.x = element_text(size = 10, face = "bold")
+  ) +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.15)))
+
+print(p8)
+ggsave("processing_time_vs_sla.png", p8, width = 10, height = 8, dpi = 300)
+
+# SUMMARY OF KEY INSIGHTS
+cat("\n=== KEY PROCESSING TIME INSIGHTS ===\n")
+cat("Average Processing Time:", round(processing_stats$avg_processing_days, 1), "days\n")
+cat("Median Processing Time:", round(processing_stats$median_processing_days, 1), "days\n")
+cat("Standard Deviation:", round(processing_stats$std_dev_days, 1), "days\n")
+cat("Range:", round(processing_stats$min_processing_days, 1), "to", round(processing_stats$max_processing_days, 1), "days\n")
+cat("95th Percentile:", round(processing_stats$p95_processing_days, 1), "days\n")
+
+# Calculate efficiency metrics
+efficiency_metrics <- data.frame(
+  Metric = c("Process Consistency", "Outlier Impact", "SLA Compliance"),
+  Value = c(
+    # Process consistency (lower std dev relative to mean is better)
+    ifelse(processing_stats$std_dev_days / processing_stats$avg_processing_days < 0.5, "Good", "Needs Improvement"),
+    # Outlier impact (difference between avg and median)
+    ifelse(abs(processing_stats$avg_processing_days - processing_stats$median_processing_days) < 2, "Low", "High"),
+    # SLA compliance (assuming 7-day target)
+    ifelse(processing_stats$p95_processing_days <= target_sla, "Good", "Needs Improvement")
+  )
+)
+
+print("Efficiency Assessment:")
+print(efficiency_metrics)
+
+# Save the processing statistics
+write.csv(processing_stats, "manual_processing_time_statistics.csv", row.names = FALSE)
+write.csv(stats_summary, "processing_time_detailed_stats.csv", row.names = FALSE)
+
+cat("\n=== VISUALIZATIONS COMPLETE ===\n")
+cat("Generated 8 comprehensive visualizations:\n")
+cat("1. Comprehensive statistics bar chart\n")
+cat("2. Central tendency and range comparison\n")
+cat("3. Percentile distribution analysis\n")
+cat("4. Distribution violin plot with annotations\n")
+cat("5. Radar chart for metric comparison\n")
+cat("6. Summary table visualization\n")
+cat("7. Annotated distribution histogram\n")
+cat("8. SLA compliance comparison\n")
+```
+
+
+```{r}
+# Analyze goods receipt integration patterns
+wm_integration_analysis <- raw_data %>%
+  group_by(invoice_id) %>%
+  summarise(
+    has_goods_receipt = any(activity_id == "Get goods receipt from WM"),
+    goods_receipt_timing = ifelse(
+      has_goods_receipt,
+      as.numeric(difftime(
+        min(timestamp[activity_id == "Get goods receipt from WM"]),
+        min(timestamp), 
+        units = "days"
+      )),
+      NA
+    ),
+    integration_success = any(activity_id == "FI Posted Automatically" & has_goods_receipt),
+    manual_fallback = any(activity_id == "Posted manually" & has_goods_receipt)
+  )
+
+integration_stats <- wm_integration_analysis %>%
+  summarise(
+    total_cases_with_wm = sum(has_goods_receipt, na.rm = TRUE),
+    integration_success_rate = mean(integration_success, na.rm = TRUE) * 100,
+    manual_fallback_rate = mean(manual_fallback, na.rm = TRUE) * 100,
+    avg_integration_delay_days = mean(goods_receipt_timing, na.rm = TRUE)
+  )
+```
+
+
+```{r}
+# FOCUSED ANALYSIS: MANUAL PROCESSING, WM INTEGRATION & FAILED AUTOMATIC POSTINGS
+cat("=== FOCUSED ANALYSIS: MANUAL PROCESSING & INTEGRATION ISSUES ===\n")
+
+# Load required libraries
+library(ggplot2)
+library(dplyr)
+library(scales)
+library(lubridate)
+library(bupaR)
+
+# 1. MANUAL POSTING ANALYSIS
+cat("\n1. MANUAL POSTING ANALYSIS\n")
+
+# Filter for manual processing cases
+manual_processing_cases <- raw_data %>%
+  filter(activity_id %in% c("Posted manually", "FI for Manual processing after initial check")) %>%
+  group_by(invoice_id) %>%
+  summarise(
+    n_manual_activities = n(),
+    manual_activities = paste(unique(activity_id), collapse = ", "),
+    total_activities = n_distinct(event_id),
+    manual_posting_time = first(timestamp[activity_id == "Posted manually"]),
+    invoice_amount = first(invoice_amount),
+    vendor = first(vendor_id),
+    gl_account = first(gl_account),
+    user_responsible = first(user_id[activity_id == "Posted manually"])
+  )
+
+# Manual posting reasons and patterns
+manual_analysis <- raw_data %>%
+  group_by(invoice_id) %>%
+  mutate(
+    has_manual_posting = any(activity_id == "Posted manually"),
+    has_manual_processing_flag = any(activity_id == "FI for Manual processing after initial check")
+  ) %>%
+  filter(has_manual_posting | has_manual_processing_flag) %>%
+  summarise(
+    final_status = last(activity_id),
+    process_path = paste(activity_id, collapse = " -> "),
+    n_activities = n(),
+    invoice_amount = first(invoice_amount),
+    vendor = first(vendor_id),
+    gl_account = first(gl_account),
+    manual_reason = case_when(
+      any(activity_id == "Approval rejected") ~ "Approval Rejection",
+      any(activity_id == "On hold at approver") ~ "Approval Hold",
+      any(activity_id == "Get goods receipt from WM") ~ "Goods Receipt Issue",
+      n_activities > 6 ~ "Complex Process",
+      invoice_amount > 500000 ~ "High Value",
+      TRUE ~ "Other Exception"
+    )
+  )
+
+print("Manual Posting Summary:")
+manual_summary <- manual_analysis %>%
+  count(manual_reason, sort = TRUE) %>%
+  mutate(percentage = n / sum(n) * 100)
+print(manual_summary)
+
+# 2. GOODS RECEIPT WM INTEGRATION ISSUES
+cat("\n2. GOODS RECEIPT WM INTEGRATION ANALYSIS\n")
+
+# Analyze WM integration patterns
+wm_integration_cases <- raw_data %>%
+  filter(activity_id == "Get goods receipt from WM") %>%
+  group_by(invoice_id) %>%
+  summarise(
+    wm_activity_time = first(timestamp),
+    wm_user = first(user_id),
+    vendor = first(vendor_id),
+    invoice_amount = first(invoice_amount),
+    # Check what happens after WM activity
+    next_activities = paste(lead(activity_id), collapse = ", "),
+    has_issues = any(lead(activity_id) %in% c("Posted manually", "Approval rejected", "On hold at approver"))
+  )
+
+wm_issues_summary <- wm_integration_cases %>%
+  summarise(
+    total_wm_cases = n(),
+    cases_with_issues = sum(has_issues),
+    issue_rate = mean(has_issues) * 100,
+    common_vendors = names(sort(table(vendor), decreasing = TRUE)[1:5])
+  )
+
+print("WM Integration Issues Summary:")
+print(wm_issues_summary)
+
+# 3. FAILED AUTOMATIC POSTINGS
+cat("\n3. FAILED AUTOMATIC POSTING ANALYSIS\n")
+
+# Identify cases where automatic posting failed
+failed_auto_cases <- raw_data %>%
+  group_by(invoice_id) %>%
+  mutate(
+    has_auto_posting_attempt = any(activity_id == "FI Posted Automatically"),
+    ends_with_manual = last(activity_id) == "Posted manually",
+    has_manual_intervention = any(activity_id %in% c("FI for Manual processing after initial check", "Posted manually"))
+  ) %>%
+  filter(has_auto_posting_attempt & has_manual_intervention) %>%
+  summarise(
+    auto_posting_time = first(timestamp[activity_id == "FI Posted Automatically"]),
+    manual_intervention_time = first(timestamp[activity_id %in% c("FI for Manual processing after initial check", "Posted manually")]),
+    time_to_manual_intervention = as.numeric(difftime(manual_intervention_time, auto_posting_time, units = "days")),
+    vendor = first(vendor_id),
+    gl_account = first(gl_account),
+    invoice_amount = first(invoice_amount),
+    process_path = paste(activity_id, collapse = " -> ")
+  )
+
+print("Failed Automatic Posting Summary:")
+failed_auto_summary <- failed_auto_cases %>%
+  summarise(
+    total_cases = n(),
+    avg_time_to_intervention = mean(time_to_manual_intervention, na.rm = TRUE),
+    median_time_to_intervention = median(time_to_manual_intervention, na.rm = TRUE),
+    high_value_cases = sum(invoice_amount > 500000)
+  )
+print(failed_auto_summary)
+
+# VISUALIZATIONS
+cat("\n4. CREATING SPECIALIZED VISUALIZATIONS\n")
+
+# PLOT 1: MANUAL POSTING REASONS BREAKDOWN
+p1 <- ggplot(manual_summary, aes(x = reorder(manual_reason, n), y = n, fill = manual_reason)) +
+  geom_bar(stat = "identity", alpha = 0.8) +
+  coord_flip() +
+  geom_text(aes(label = paste0(round(percentage, 1), "%")), hjust = -0.1, size = 3.5) +
+  labs(
+    title = "Manual Posting Reasons Breakdown",
+    subtitle = "Primary causes requiring manual intervention in invoice processing",
+    x = "Reason for Manual Processing",
+    y = "Number of Invoices",
+    fill = "Reason"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "none") +
+  scale_fill_brewer(palette = "Set3")
+
+ggsave("manual_posting_reasons.png", p1, width = 12, height = 8, dpi = 300)
+
+# PLOT 2: WM INTEGRATION ISSUES BY VENDOR
+wm_vendor_issues <- wm_integration_cases %>%
+  group_by(vendor) %>%
+  summarise(
+    total_cases = n(),
+    issue_cases = sum(has_issues),
+    issue_rate = (issue_cases / total_cases) * 100
+  ) %>%
+  filter(total_cases >= 10) %>%  # Only vendors with significant volume
+  arrange(desc(issue_rate)) %>%
+  head(15)
+
+p2 <- ggplot(wm_vendor_issues, aes(x = reorder(vendor, issue_rate), y = issue_rate)) +
+  geom_bar(stat = "identity", fill = "#E74C3C", alpha = 0.8) +
+  coord_flip() +
+  labs(
+    title = "Goods Receipt WM Integration Issues by Vendor",
+    subtitle = "Vendors with highest WM integration failure rates (10+ cases)",
+    x = "Vendor ID",
+    y = "WM Integration Issue Rate (%)"
+  ) +
+  theme_minimal()
+
+ggsave("wm_integration_issues_by_vendor.png", p2, width = 12, height = 8, dpi = 300)
+
+# PLOT 3: FAILED AUTO POSTING TIME TO RESOLUTION
+p3 <- ggplot(failed_auto_cases, aes(x = time_to_manual_intervention)) +
+  geom_histogram(bins = 30, fill = "#F39C12", alpha = 0.8, color = "white") +
+  geom_vline(aes(xintercept = median(time_to_manual_intervention, na.rm = TRUE)), 
+             color = "red", linetype = "dashed", size = 1) +
+  labs(
+    title = "Time to Manual Intervention After Failed Automatic Posting",
+    subtitle = "Delay between automatic posting failure and manual resolution",
+    x = "Time to Manual Intervention (Days)",
+    y = "Number of Invoices",
+    caption = paste("Median resolution time:", 
+                   round(median(failed_auto_cases$time_to_manual_intervention, na.rm = TRUE), 1), "days")
+  ) +
+  theme_minimal()
+
+ggsave("failed_auto_posting_resolution_time.png", p3, width = 12, height = 8, dpi = 300)
+
+# PLOT 4: MANUAL VS AUTOMATIC PROCESSING COMPARISON
+processing_comparison <- raw_data %>%
+  group_by(invoice_id) %>%
+  summarise(
+    processing_type = case_when(
+      any(activity_id == "Posted manually") ~ "Manual",
+      any(activity_id == "FI Posted Automatically") ~ "Automatic",
+      TRUE ~ "Other"
+    ),
+    throughput_days = as.numeric(difftime(max(timestamp), min(timestamp), units = "days")),
+    invoice_amount = first(invoice_amount),
+    n_activities = n()
+  ) %>%
+  filter(processing_type %in% c("Manual", "Automatic"))
+
+p4 <- ggplot(processing_comparison, aes(x = processing_type, y = throughput_days, fill = processing_type)) +
+  geom_boxplot(alpha = 0.7) +
+  scale_y_log10() +  # Log scale for better visualization
+  labs(
+    title = "Processing Time: Manual vs Automatic Posting",
+    subtitle = "Comparison of throughput times for different processing methods",
+    x = "Processing Type",
+    y = "Processing Time (Days - Log Scale)",
+    fill = "Processing Type"
+  ) +
+  theme_minimal() +
+  scale_fill_manual(values = c("Manual" = "#E74C3C", "Automatic" = "#27AE60"))
+
+ggsave("manual_vs_automatic_processing.png", p4, width = 12, height = 8, dpi = 300)
+
+# PLOT 5: MANUAL POSTING TREND OVER TIME
+manual_trend <- raw_data %>%
+  filter(activity_id == "Posted manually") %>%
+  mutate(month = floor_date(timestamp, "month")) %>%
+  group_by(month) %>%
+  summarise(manual_count = n_distinct(invoice_id))
+
+p5 <- ggplot(manual_trend, aes(x = month, y = manual_count)) +
+  geom_line(size = 1.2, color = "#E74C3C") +
+  geom_point(size = 2, color = "#E74C3C") +
+  geom_smooth(method = "loess", se = FALSE, color = "#FF6B6B", linetype = "dashed") +
+  labs(
+    title = "Manual Posting Trend Over Time",
+    subtitle = "Monthly volume of invoices requiring manual posting",
+    x = "Month",
+    y = "Number of Manual Postings"
+  ) +
+  theme_minimal()
+
+ggsave("manual_posting_trend.png", p5, width = 12, height = 8, dpi = 300)
+
+# PLOT 6: GL ACCOUNTS WITH HIGHEST MANUAL PROCESSING
+gl_manual_analysis <- raw_data %>%
+  group_by(invoice_id) %>%
+  filter(any(activity_id == "Posted manually")) %>%
+  group_by(gl_account) %>%
+  summarise(
+    manual_count = n_distinct(invoice_id),
+    avg_amount = mean(first(invoice_amount), na.rm = TRUE)
+  ) %>%
+  arrange(desc(manual_count)) %>%
+  head(15)
+
+p6 <- ggplot(gl_manual_analysis, aes(x = reorder(gl_account, manual_count), y = manual_count)) +
+  geom_bar(stat = "identity", fill = "#8E44AD", alpha = 0.8) +
+  coord_flip() +
+  labs(
+    title = "GL Accounts with Highest Manual Processing",
+    subtitle = "General Ledger accounts requiring most manual intervention",
+    x = "GL Account",
+    y = "Number of Manual Postings"
+  ) +
+  theme_minimal()
+
+ggsave("gl_accounts_manual_processing.png", p6, width = 12, height = 8, dpi = 300)
+
+# DETAILED ANALYSIS REPORTS
+cat("\n5. GENERATING DETAILED ANALYSIS REPORTS\n")
+
+# Manual Processing Deep Dive
+manual_detailed <- raw_data %>%
+  group_by(invoice_id) %>%
+  filter(any(activity_id %in% c("Posted manually", "FI for Manual processing after initial check"))) %>%
+  summarise(
+    process_sequence = paste(activity_id, collapse = " -> "),
+    final_status = last(activity_id),
+    total_activities = n(),
+    invoice_amount = first(invoice_amount),
+    vendor = first(vendor_id),
+    gl_account = first(gl_account),
+    has_wm_integration = any(activity_id == "Get goods receipt from WM"),
+    has_approval_issues = any(activity_id %in% c("Approval rejected", "On hold at approver")),
+    processing_days = as.numeric(difftime(max(timestamp), min(timestamp), units = "days"))
+  )
+
+# WM Integration Failure Analysis
+wm_failure_patterns <- raw_data %>%
+  group_by(invoice_id) %>%
+  filter(any(activity_id == "Get goods receipt from WM")) %>%
+  summarise(
+    wm_position = which(activity_id == "Get goods receipt from WM")[1],
+    activities_after_wm = paste(activity_id[wm_position:length(activity_id)], collapse = " -> "),
+    has_manual_after_wm = any(activity_id[wm_position:length(activity_id)] == "Posted manually"),
+    vendor = first(vendor_id),
+    processing_outcome = last(activity_id)
+  )
+
+# Save detailed analysis files
+write.csv(manual_summary, "manual_posting_analysis.csv", row.names = FALSE)
+write.csv(wm_integration_cases, "wm_integration_analysis.csv", row.names = FALSE)
+write.csv(failed_auto_cases, "failed_automatic_posting_analysis.csv", row.names = FALSE)
+write.csv(manual_detailed, "manual_processing_detailed.csv", row.names = FALSE)
+write.csv(wm_failure_patterns, "wm_failure_patterns.csv", row.names = FALSE)
+
+# KEY INSIGHTS SUMMARY
+cat("\n=== KEY INSIGHTS: MANUAL PROCESSING & INTEGRATION ISSUES ===\n")
+
+manual_insights <- list(
+  total_manual_cases = nrow(manual_analysis),
+  manual_processing_rate = round(nrow(manual_analysis) / n_distinct(raw_data$invoice_id) * 100, 2),
+  top_manual_reason = manual_summary$manual_reason[1],
+  wm_integration_issue_rate = round(wm_issues_summary$issue_rate, 2),
+  avg_failed_auto_resolution_time = round(mean(failed_auto_cases$time_to_manual_intervention, na.rm = TRUE), 2),
+  high_value_manual_cases = sum(manual_analysis$invoice_amount > 500000, na.rm = TRUE)
+)
+
+print("Critical Issues Identified:")
+print(manual_insights)
+
+cat("\n=== RECOMMENDATIONS ===\n")
+recommendations <- data.frame(
+  Issue = c("High Manual Posting Rate", "WM Integration Failures", "Failed Automatic Postings", "GL Account Issues"),
+  Recommendation = c(
+    "Implement validation rules to catch issues before posting; train vendors on invoice requirements",
+    "Improve WM system integration; create vendor certification program for WM compliance",
+    "Enhance automatic posting logic; implement real-time exception alerts",
+    "Review and standardize GL account usage; provide training on proper account selection"
+  ),
+  Expected_Impact = c("Reduce manual work by 40-60%", "Decrease WM issues by 50%", "Improve auto-posting success by 30%", "Reduce GL-related errors by 70%")
+)
+
+print(recommendations)
+
+cat("\n=== ANALYSIS COMPLETE ===\n")
+cat("Generated 6 specialized visualizations and 5 detailed analysis files\n")
+cat("Focus areas: Manual processing reasons, WM integration issues, failed automatic postings\n")
+```
+
+```{r}
+# Load required libraries
+library(ggplot2)
+library(dplyr)
+library(lubridate)
+library(bupaR)
+library(scales)
+
+# Set working directory
+#setwd("C:/Users/Khali/Desktop/INN351 and INN354/INN354")
+
+# Import data
+raw_data <- read.csv("INN354 2025H Event log.csv")
+raw_data$timestamp <- as.POSIXct(strptime(raw_data$timestamp, "%Y-%m-%dT%H:%M:%SZ"))
+
+# ANALYSIS 1: FI MANUAL PROCESSING STEPS
+cat("=== FI MANUAL PROCESSING ANALYSIS ===\n")
+
+# Filter for manual processing cases
+manual_processing_cases <- raw_data %>%
+  filter(activity_id == "Posted manually") %>%
+  distinct(invoice_id) %>%
+  pull(invoice_id)
+
+# Get complete event logs for manual processing cases
+manual_cases_data <- raw_data %>%
+  filter(invoice_id %in% manual_processing_cases)
+
+# Manual processing statistics
+manual_stats <- manual_cases_data %>%
+  group_by(invoice_id) %>%
+  summarise(
+    n_activities = n(),
+    processing_days = as.numeric(difftime(max(timestamp), min(timestamp), units = "days")),
+    has_rejection = any(activity_id == "Approval rejected"),
+    has_hold = any(activity_id == "On hold at approver"),
+    invoice_amount = first(invoice_amount),
+    vendor = first(vendor_id),
+    gl_account = first(gl_account),
+    final_status = last(activity_id)
+  )
+
+# PLOT 1: MANUAL PROCESSING REASONS ANALYSIS
+manual_reasons <- manual_cases_data %>%
+  group_by(invoice_id) %>%
+  summarise(
+    had_rejection = any(activity_id == "Approval rejected"),
+    had_hold = any(activity_id == "On hold at approver"),
+    had_comment_request = any(activity_id == "Asked for Comment"),
+    n_approval_cycles = sum(activity_id == "Sent for approval")
+  ) %>%
+  summarise(
+    rejection_rate = mean(had_rejection) * 100,
+    hold_rate = mean(had_hold) * 100,
+    comment_rate = mean(had_comment_request) * 100,
+    multiple_approvals_rate = mean(n_approval_cycles > 1) * 100
+  )
+
+reason_data <- data.frame(
+  Reason = c("Approval Rejection", "On Hold", "Comment Request", "Multiple Approvals"),
+  Percentage = as.numeric(manual_reasons[1, ])
+)
+
+p1 <- ggplot(reason_data, aes(x = reorder(Reason, -Percentage), y = Percentage)) +
+  geom_bar(stat = "identity", fill = "#E74C3C", alpha = 2) +
+  geom_text(aes(label = paste0(round(Percentage, 1), "%")), vjust = -0.5, size = 3, fontface = "bold") +
+  labs(
+    title = "Root Causes of Manual Posting Requirements",
+    subtitle = "Percentage of manually posted invoices experiencing each issue",
+    x = "Process Issue",
+    y = "Percentage of Manual Postings (%)"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(face = "bold", size = 15),
+    axis.text.x = element_text(angle = 30, hjust = 1, size = 14)
+  )
+
+print(p1)
+ggsave("manual_posting_reasons.png", p1, width = 8, height = 2, dpi = 300)
+```
+
+
+```{r}
+# Load required libraries
+library(ggplot2)
+library(dplyr)
+library(scales)
+library(treemap)
+library(forcats)
+
+# Set working directory
+#setwd("C:/Users/Khali/Desktop/INN351 and INN354/INN354")
+
+# Import data
+raw_data <- read.csv("INN354 2025H Event log.csv")
+raw_data$timestamp <- as.POSIXct(strptime(raw_data$timestamp, "%Y-%m-%dT%H:%M:%SZ"))
+
+# ANALYSIS: LARGEST INVOICE TYPES THAT FAIL
+cat("=== LARGEST INVOICE TYPES FAILURE ANALYSIS ===\n")
+
+# Define failure criteria
+failed_cases <- raw_data %>%
+  group_by(invoice_id) %>%
+  summarise(
+    final_status = last(activity_id),
+    has_manual_posting = any(activity_id == "Posted manually"),
+    has_rejection = any(activity_id == "Approval rejected"),
+    has_hold = any(activity_id == "On hold at approver"),
+    invoice_amount = first(invoice_amount),
+    vendor_id = first(vendor_id),
+    gl_account = first(gl_account),
+    cost_center = first(cost_center_id),
+    profit_center = first(profit_center_id),
+    currency = first(currency_id),
+    n_activities = n(),
+    processing_days = as.numeric(difftime(max(timestamp), min(timestamp), units = "days"))
+  ) %>%
+  mutate(
+    failure_type = case_when(
+      has_rejection ~ "Approval Rejected",
+      has_hold ~ "On Hold at Approver",
+      has_manual_posting & !final_status %in% c("FI Posted Automatically", "Posted manually") ~ "Manual Intervention Required",
+      final_status == "Invoice document deleted" ~ "Invoice Deleted",
+      processing_days > 30 ~ "Extended Processing Time",
+      TRUE ~ "Successful"
+    ),
+    is_failure = failure_type != "Successful",
+    amount_category = cut(invoice_amount,
+                         breaks = c(0, 1000, 10000, 50000, 100000, 500000, 1000000, Inf),
+                         labels = c("Small (<1K)", "Medium (1K-10K)", "Large (10K-50K)", 
+                                   "Major (50K-100K)", "Strategic (100K-500K)", 
+                                   "Critical (500K-1M)", "Enterprise (>1M)"))
+  )
+
+# FILTER FOR LARGEST FAILED INVOICES
+large_failed_invoices <- failed_cases %>%
+  filter(is_failure == TRUE & invoice_amount >= 100000) %>%  # Focus on large invoices (100K+)
+  arrange(desc(invoice_amount))
+
+cat("Total large failed invoices (100K+):", nrow(large_failed_invoices), "\n")
+cat("Total value of large failed invoices:", sum(large_failed_invoices$invoice_amount, na.rm = TRUE), "\n")
+
+# PLOT 1: LARGEST FAILED INVOICES BY AMOUNT
+p1 <- large_failed_invoices %>%
+  head(20) %>%  # Top 20 largest failed invoices
+  ggplot(aes(x = reorder(invoice_id, invoice_amount), y = invoice_amount)) +
+  geom_bar(stat = "identity", fill = "#E74C3C", alpha = 0.8) +
+  geom_text(aes(label = scales::dollar(invoice_amount)), 
+            hjust = -0.1, size = 2, fontface = "bold") +
+  coord_flip() +
+  scale_y_continuous(labels = scales::dollar, expand = expansion(mult = c(0, 0.2))) +
+  labs(
+    title = "Top 20 Largest Failed Invoices by Amount",
+    subtitle = "Highest value invoices that experienced process failures",
+    x = "Invoice ID",
+    y = "Invoice Amount"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(face = "bold", size = 16),
+    axis.text.y = element_text(size = 10)
+  )
+
+print(p1)
+ggsave("largest_failed_invoices.png", p1, width = 14, height = 10, dpi = 300)
+
+# PLOT 2: FAILURE DISTRIBUTION BY AMOUNT CATEGORY
+failure_by_amount_category <- failed_cases %>%
+  filter(is_failure == TRUE) %>%
+  group_by(amount_category) %>%
+  summarise(
+    total_failed = n(),
+    total_amount = sum(invoice_amount, na.rm = TRUE),
+    avg_amount = mean(invoice_amount, na.rm = TRUE),
+    failure_rate = n() / nrow(failed_cases) * 100
+  ) %>%
+  filter(!is.na(amount_category))
+
+p2 <- ggplot(failure_by_amount_category, 
+             aes(x = amount_category, y = total_amount)) +
+  geom_bar(stat = "identity", fill = "#3498DB", alpha = 0.8) +
+  geom_text(aes(label = scales::dollar(total_amount)), 
+            vjust = -0.5, size = 2, fontface = "bold") +
+  scale_y_continuous(labels = scales::dollar) +
+  labs(
+    title = "Total Failed Invoice Value by Amount Category",
+    subtitle = "Cumulative value of failed invoices across different size categories",
+    x = "Invoice Amount Category",
+    y = "Total Failed Amount"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(face = "bold", size = 16),
+    axis.text.x = element_text(angle = 45, hjust = 1, size = 11)
+  )
+
+print(p2)
+ggsave("failed_amounts_by_category.png", p2, width = 14, height = 8, dpi = 300)
+
+# PLOT 3: FAILURE TYPES FOR LARGE INVOICES
+large_failures_by_type <- large_failed_invoices %>%
+  group_by(failure_type) %>%
+  summarise(
+    count = n(),
+    total_amount = sum(invoice_amount, na.rm = TRUE),
+    avg_amount = mean(invoice_amount, na.rm = TRUE),
+    max_amount = max(invoice_amount, na.rm = TRUE)
+  ) %>%
+  arrange(desc(total_amount))
+
+p3 <- ggplot(large_failures_by_type, 
+             aes(x = reorder(failure_type, -total_amount), y = total_amount)) +
+  geom_bar(stat = "identity", fill = "#9B59B6", alpha = 0.8) +
+  geom_text(aes(label = scales::dollar(total_amount)), 
+            vjust = -0.5, size = 2, fontface = "bold") +
+  scale_y_continuous(labels = scales::dollar) +
+  labs(
+    title = "Failure Types for Large Invoices (100K+)",
+    subtitle = "Total value of failed invoices by failure type",
+    x = "Failure Type",
+    y = "Total Failed Amount"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(face = "bold", size = 16),
+    axis.text.x = element_text(angle = 45, hjust = 1, size = 11)
+  )
+
+print(p3)
+ggsave("large_failures_by_type.png", p3, width = 14, height = 8, dpi = 300)
+
+# PLOT 4: VENDORS WITH LARGEST FAILED INVOICES
+vendor_failure_analysis <- large_failed_invoices %>%
+  group_by(vendor_id) %>%
+  summarise(
+    failed_invoices = n(),
+    total_failed_amount = sum(invoice_amount, na.rm = TRUE),
+    avg_failed_amount = mean(invoice_amount, na.rm = TRUE),
+    max_failed_amount = max(invoice_amount, na.rm = TRUE)
+  ) %>%
+  arrange(desc(total_failed_amount)) %>%
+  head(15)  # Top 15 vendors by total failed amount
+
+p4 <- ggplot(vendor_failure_analysis, 
+             aes(x = reorder(vendor_id, -total_failed_amount), y = total_failed_amount)) +
+  geom_bar(stat = "identity", fill = "#E67E22", alpha = 0.8) +
+  geom_text(aes(label = scales::dollar(total_failed_amount)), 
+            vjust = -0.5, size = 2, fontface = "bold") +
+  scale_y_continuous(labels = scales::dollar) +
+  labs(
+    title = "Top 15 Vendors by Total Failed Invoice Value",
+    subtitle = "Vendors with highest cumulative value of failed invoices (100K+)",
+    x = "Vendor ID",
+    y = "Total Failed Amount"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(face = "bold", size = 16),
+    axis.text.x = element_text(angle = 45, hjust = 1, size = 10)
+  )
+
+print(p4)
+ggsave("vendors_largest_failures.png", p4, width = 14, height = 8, dpi = 300)
+
+# PLOT 5: GL ACCOUNTS WITH LARGEST FAILED INVOICES
+gl_account_failures <- large_failed_invoices %>%
+  group_by(gl_account) %>%
+  summarise(
+    failed_invoices = n(),
+    total_failed_amount = sum(invoice_amount, na.rm = TRUE),
+    avg_failed_amount = mean(invoice_amount, na.rm = TRUE)
+  ) %>%
+  arrange(desc(total_failed_amount)) %>%
+  head(15)  # Top 15 GL accounts
+
+p5 <- ggplot(gl_account_failures, 
+             aes(x = reorder(gl_account, -total_failed_amount), y = total_failed_amount)) +
+  geom_bar(stat = "identity", fill = "#1ABC9C", alpha = 0.8) +
+  geom_text(aes(label = scales::dollar(total_failed_amount)), 
+            vjust = -0.5, size = 2, fontface = "bold") +
+  scale_y_continuous(labels = scales::dollar) +
+  labs(
+    title = "Top 15 GL Accounts by Total Failed Invoice Value",
+    subtitle = "General Ledger accounts with highest failed invoice amounts (100K+)",
+    x = "GL Account",
+    y = "Total Failed Amount"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(face = "bold", size = 16),
+    axis.text.x = element_text(angle = 45, hjust = 1, size = 9)
+  )
+
+print(p5)
+ggsave("gl_accounts_largest_failures.png", p5, width = 14, height = 8, dpi = 300)
+
+# PLOT 6: TREEMAP OF LARGEST FAILED INVOICES BY VENDOR AND FAILURE TYPE
+library(treemap)
+
+treemap_data <- large_failed_invoices %>%
+  group_by(vendor_id, failure_type) %>%
+  summarise(
+    total_amount = sum(invoice_amount, na.rm = TRUE),
+    invoice_count = n()
+  ) %>%
+  arrange(desc(total_amount)) %>%
+  head(30)  # Top 30 combinations
+
+png("treemap_largest_failures.png", width = 1200, height = 800)
+treemap(treemap_data,
+        index = c("vendor_id", "failure_type"),
+        vSize = "total_amount",
+        vColor = "invoice_count",
+        type = "value",
+        title = "Largest Failed Invoices: Vendor vs Failure Type",
+        palette = "RdYlBu",
+        border.col = "white",
+        fontsize.title = 16,
+        fontsize.labels = c(12, 10),
+        fontcolor.labels = "white",
+        overlap.labels = 0.5)
+dev.off()
+
+# PLOT 7: PROCESSING TIME VS INVOICE AMOUNT FOR FAILED CASES
+p7 <- ggplot(large_failed_invoices, 
+             aes(x = invoice_amount, y = processing_days, color = failure_type)) +
+  geom_point(size = 2, alpha = 0.7) +
+  geom_smooth(method = "lm", se = FALSE, linetype = "dashed") +
+  scale_x_continuous(labels = scales::dollar) +
+  scale_color_manual(values = c("#E74C3C", "#3498DB", "#9B59B6", "#F39C12", "#1ABC9C")) +
+  labs(
+    title = "Processing Time vs Invoice Amount for Failed Large Invoices",
+    subtitle = "Relationship between invoice value and processing duration for failures",
+    x = "Invoice Amount",
+    y = "Processing Time (Days)",
+    color = "Failure Type"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(face = "bold", size = 16),
+    legend.position = "bottom"
+  )
+
+print(p7)
+ggsave("processing_time_vs_amount_failures.png", p7, width = 14, height = 10, dpi = 300)
+
+# PLOT 8: FAILURE RATE BY AMOUNT CATEGORY
+failure_rates <- failed_cases %>%
+  group_by(amount_category) %>%
+  summarise(
+    total_invoices = n(),
+    failed_invoices = sum(is_failure),
+    success_invoices = total_invoices - failed_invoices,
+    failure_rate = (failed_invoices / total_invoices) * 100,
+    total_amount_failed = sum(invoice_amount[is_failure], na.rm = TRUE)
+  ) %>%
+  filter(!is.na(amount_category))
+
+p8 <- ggplot(failure_rates, aes(x = amount_category, y = failure_rate)) +
+  geom_bar(stat = "identity", fill = "#E74C3C", alpha = 0.8) +
+  geom_text(aes(label = paste0(round(failure_rate, 1), "%")), 
+            vjust = -0.5, size = 2, fontface = "bold") +
+  labs(
+    title = "Failure Rate by Invoice Amount Category",
+    subtitle = "Percentage of invoices that fail in each amount category",
+    x = "Invoice Amount Category",
+    y = "Failure Rate (%)"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(face = "bold", size = 16),
+    axis.text.x = element_text(angle = 45, hjust = 1, size = 11)
+  )
+
+print(p8)
+ggsave("failure_rate_by_amount_category.png", p8, width = 14, height = 8, dpi = 300)
+
+# DETAILED ANALYSIS OF TOP 10 LARGEST FAILED INVOICES
+cat("\n=== TOP 10 LARGEST FAILED INVOICES DETAILED ANALYSIS ===\n")
+
+top_10_failures <- large_failed_invoices %>%
+  head(10) %>%
+  select(invoice_id, invoice_amount, failure_type, vendor_id, gl_account, 
+         processing_days, n_activities)
+
+print(top_10_failures)
+
+# Calculate financial impact
+financial_impact <- list()
+financial_impact$total_failed_amount <- sum(large_failed_invoices$invoice_amount, na.rm = TRUE)
+financial_impact$avg_failed_amount <- mean(large_failed_invoices$invoice_amount, na.rm = TRUE)
+financial_impact$max_failed_amount <- max(large_failed_invoices$invoice_amount, na.rm = TRUE)
+financial_impact$failed_invoices_count <- nrow(large_failed_invoices)
+
+cat("\nFINANCIAL IMPACT SUMMARY:\n")
+cat("Total failed amount (100K+ invoices):", scales::dollar(financial_impact$total_failed_amount), "\n")
+cat("Average failed invoice amount:", scales::dollar(financial_impact$avg_failed_amount), "\n")
+cat("Largest single failed invoice:", scales::dollar(financial_impact$max_failed_amount), "\n")
+cat("Number of large failed invoices:", financial_impact$failed_invoices_count, "\n")
+
+# VENDOR RISK ANALYSIS
+vendor_risk <- large_failed_invoices %>%
+  group_by(vendor_id) %>%
+  summarise(
+    total_failed_amount = sum(invoice_amount),
+    failed_invoice_count = n(),
+    avg_failed_amount = mean(invoice_amount),
+    failure_types = paste(unique(failure_type), collapse = ", ")
+  ) %>%
+  arrange(desc(total_failed_amount))
+
+cat("\nTOP 5 HIGHEST RISK VENDORS:\n")
+print(vendor_risk %>% head(5))
+
+# Save detailed analysis files
+write.csv(large_failed_invoices, "largest_failed_invoices_detailed.csv", row.names = FALSE)
+write.csv(vendor_risk, "vendor_risk_analysis.csv", row.names = FALSE)
+write.csv(failure_rates, "failure_rates_by_amount.csv", row.names = FALSE)
+
+cat("\n=== ANALYSIS COMPLETE ===\n")
+cat("Generated 8 comprehensive visualizations of largest failed invoice types\n")
+cat("Detailed analysis saved to CSV files for further investigation\n")
+```
+
+
+
+```{r}
+# FIXED CODE FOR DESCRIPTIVE STATISTICS PLOTS
+library(ggplot2)
+library(dplyr)
+library(lubridate)
+library(scales)
+library(patchwork)
+
+# Ensure dplyr is properly loaded
+if (!require(dplyr)) {
+  install.packages("dplyr")
+  library(dplyr)
+}
+
+# Re-import and clean data properly
+raw_data <- read.csv("INN354 2025H Event log.csv")
+
+# Convert dates properly - handle NA values
+raw_data <- raw_data %>%
+  mutate(
+    timestamp = as.POSIXct(strptime(timestamp, "%Y-%m-%dT%H:%M:%SZ")),
+    invoice_date = as.POSIXct(strptime(invoice_date, "%Y-%m-%dT%H:%M:%SZ")),
+    scan_date = as.POSIXct(strptime(scan_date, "%Y-%m-%dT%H:%M:%SZ")),
+    invoice_id = as.factor(invoice_id)
+  )
+
+# BASIC DESCRIPTIVE STATISTICS
+cat("=== BASIC DESCRIPTIVE STATISTICS ===\n")
+
+# 1. TIMESTAMP RANGE
+timestamp_range <- range(raw_data$timestamp, na.rm = TRUE)
+cat("1. TIMESTAMP RANGE:\n")
+cat("   Earliest:", as.character(timestamp_range[1]), "\n")
+cat("   Latest:  ", as.character(timestamp_range[2]), "\n")
+cat("   Timespan:", round(difftime(timestamp_range[2], timestamp_range[1], units = "days"), 1), "days\n\n")
+
+# 2. INVOICE AMOUNT
+invoice_stats <- raw_data %>%
+  distinct(invoice_id, .keep_all = TRUE) %>%
+  summarise(
+    min_amount = min(invoice_amount, na.rm = TRUE),
+    max_amount = max(invoice_amount, na.rm = TRUE),
+    avg_amount = mean(invoice_amount, na.rm = TRUE),
+    median_amount = median(invoice_amount, na.rm = TRUE)
+  )
+
+cat("2. INVOICE AMOUNT:\n")
+cat("   Smallest: $", format(invoice_stats$min_amount, big.mark = ","), "\n")
+cat("   Largest:  $", format(invoice_stats$max_amount, big.mark = ","), "\n")
+cat("   Average:  $", format(round(invoice_stats$avg_amount), big.mark = ","), "\n")
+cat("   Median:   $", format(round(invoice_stats$median_amount), big.mark = ","), "\n\n")
+
+# 3. INVOICE DATE RANGE
+invoice_date_range <- range(raw_data$invoice_date, na.rm = TRUE)
+cat("3. INVOICE DATE RANGE:\n")
+cat("   Earliest:", as.character(invoice_date_range[1]), "\n")
+cat("   Latest:  ", as.character(invoice_date_range[2]), "\n\n")
+
+# 4. SCAN DATE RANGE
+scan_date_range <- range(raw_data$scan_date, na.rm = TRUE)
+cat("4. SCAN DATE RANGE:\n")
+cat("   Earliest:", as.character(scan_date_range[1]), "\n")
+cat("   Latest:  ", as.character(scan_date_range[2]), "\n\n")
+
+# 5. APPROVER COUNTS
+first_approvers <- raw_data$first_approver_id[!is.na(raw_data$first_approver_id)] %>% unique()
+second_approvers <- raw_data$second_approver_id[!is.na(raw_data$second_approver_id)] %>% unique()
+
+cat("5. APPROVER COUNTS:\n")
+cat("   Unique First Approvers: ", length(first_approvers), "\n")
+cat("   Unique Second Approvers:", length(second_approvers), "\n\n")
+
+# CREATE THE PLOTS
+cat("Creating descriptive statistics plots...\n")
+
+# PLOT 1: TIMELINE OVERVIEW
+timeline_data <- data.frame(
+  Event_Type = c("First Process Event", "Last Process Event", 
+                 "Earliest Invoice Date", "Latest Invoice Date",
+                 "Earliest Scan Date", "Latest Scan Date"),
+  DateTime = c(
+    min(raw_data$timestamp, na.rm = TRUE),
+    max(raw_data$timestamp, na.rm = TRUE),
+    min(raw_data$invoice_date, na.rm = TRUE),
+    max(raw_data$invoice_date, na.rm = TRUE),
+    min(raw_data$scan_date, na.rm = TRUE),
+    max(raw_data$scan_date, na.rm = TRUE)
+  )
+)
+
+p1 <- ggplot(timeline_data, aes(x = DateTime, y = reorder(Event_Type, DateTime), color = Event_Type)) +
+  geom_point(size = 4) +
+  geom_segment(aes(xend = DateTime, yend = Event_Type, x = min(DateTime)), size = 1, alpha = 0.6) +
+  labs(
+    title = "Process Timeline Overview",
+    subtitle = "Key date ranges across different event types",
+    x = "Date",
+    y = NULL
+  ) +
+  theme_minimal() +
+  theme(legend.position = "none") +
+  scale_x_datetime(date_labels = "%b %Y")
+
+# PLOT 2: INVOICE AMOUNT DISTRIBUTION
+p2 <- ggplot(raw_data %>% distinct(invoice_id, .keep_all = TRUE), 
+             aes(x = invoice_amount)) +
+  geom_histogram(fill = "#2E86AB", alpha = 0.8, bins = 50) +
+  scale_x_continuous(labels = comma) +
+  labs(
+    title = "Invoice Amount Distribution",
+    subtitle = "Distribution of invoice values (log scale)",
+    x = "Invoice Amount ($)",
+    y = "Number of Invoices"
+  ) +
+  theme_minimal() +
+  scale_x_log10(labels = comma)
+
+# PLOT 3: DATA QUALITY - MISSING VALUES
+missing_data <- data.frame(
+  Field = c("timestamp", "invoice_date", "scan_date", "first_approver", "second_approver"),
+  Missing_Count = c(
+    sum(is.na(raw_data$timestamp)),
+    sum(is.na(raw_data$invoice_date)),
+    sum(is.na(raw_data$scan_date)),
+    sum(is.na(raw_data$first_approver_id)),
+    sum(is.na(raw_data$second_approver_id))
+  ),
+  Total_Records = nrow(raw_data)
+) %>%
+  mutate(
+    Missing_Percentage = (Missing_Count / Total_Records) * 100
+  )
+
+p3 <- ggplot(missing_data, aes(x = reorder(Field, -Missing_Percentage), y = Missing_Percentage, fill = Missing_Percentage)) +
+  geom_bar(stat = "identity") +
+  geom_text(aes(label = paste0(round(Missing_Percentage, 1), "%")), vjust = -0.5, size = 3.5) +
+  scale_fill_gradient(low = "green", high = "red", name = "Missing %") +
+  labs(
+    title = "Data Quality Assessment",
+    subtitle = "Percentage of missing values by field",
+    x = "Data Field",
+    y = "Missing Values (%)"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# PLOT 4: APPROVER WORKLOAD DISTRIBUTION
+# First approvers workload
+first_approver_workload <- raw_data %>%
+  filter(!is.na(first_approver_id)) %>%
+  count(first_approver_id, name = "workload") %>%
+  arrange(desc(workload)) %>%
+  head(15)
+
+p4a <- ggplot(first_approver_workload, aes(x = reorder(first_approver_id, workload), y = workload)) +
+  geom_bar(stat = "identity", fill = "#3DCCC7", alpha = 0.8) +
+  coord_flip() +
+  labs(
+    title = "Top 15 First Approvers by Workload",
+    x = "First Approver ID",
+    y = "Number of Events Handled"
+  ) +
+  theme_minimal()
+
+# Second approvers workload
+second_approver_workload <- raw_data %>%
+  filter(!is.na(second_approver_id)) %>%
+  count(second_approver_id, name = "workload") %>%
+  arrange(desc(workload)) %>%
+  head(15)
+
+p4b <- ggplot(second_approver_workload, aes(x = reorder(second_approver_id, workload), y = workload)) +
+  geom_bar(stat = "identity", fill = "#FF6B6B", alpha = 0.8) +
+  coord_flip() +
+  labs(
+    title = "Top 15 Second Approvers by Workload",
+    x = "Second Approver ID",
+    y = "Number of Events Handled"
+  ) +
+  theme_minimal()
+
+# PLOT 5: TEMPORAL DISTRIBUTION - MONTHLY EVENTS
+monthly_events <- raw_data %>%
+  filter(!is.na(timestamp)) %>%
+  mutate(month = floor_date(timestamp, "month")) %>%
+  count(month, name = "event_count")
+
+p5 <- ggplot(monthly_events, aes(x = month, y = event_count)) +
+  geom_line(color = "#4ECDC4", size = 1) +
+  geom_point(color = "#4ECDC4", size = 2) +
+  labs(
+    title = "Monthly Process Activity",
+    subtitle = "Number of events per month",
+    x = "Month",
+    y = "Number of Events"
+  ) +
+  theme_minimal() +
+  scale_x_datetime(date_labels = "%b %Y", date_breaks = "2 months")
+
+# PLOT 6: INVOICE AMOUNT CATEGORIES
+amount_categories <- raw_data %>%
+  distinct(invoice_id, .keep_all = TRUE) %>%
+  mutate(
+    amount_category = cut(invoice_amount,
+                         breaks = c(0, 1000, 5000, 10000, 50000, 100000, Inf),
+                         labels = c("0-1K", "1K-5K", "5K-10K", "10K-50K", "50K-100K", "100K+"),
+                         include.lowest = TRUE)
+  ) %>%
+  count(amount_category, name = "invoice_count")
+
+p6 <- ggplot(amount_categories, aes(x = amount_category, y = invoice_count)) +
+  geom_bar(stat = "identity", fill = "#45B7D1", alpha = 0.8) +
+  geom_text(aes(label = invoice_count), vjust = -0.5, size = 3.5) +
+  labs(
+    title = "Invoice Amount Categories",
+    subtitle = "Distribution of invoices by value ranges",
+    x = "Amount Category ($)",
+    y = "Number of Invoices"
+  ) +
+  theme_minimal()
+
+# PLOT 7: SUMMARY STATISTICS TABLE
+summary_stats <- data.frame(
+  Metric = c("Total Events", "Total Invoices", "Total Users", 
+             "Total Activities", "Total Vendors", "Time Period",
+             "First Approvers", "Second Approvers"),
+  Value = c(
+    format(nrow(raw_data), big.mark = ","),
+    format(length(unique(raw_data$invoice_id)), big.mark = ","),
+    format(length(unique(raw_data$user_id)), big.mark = ","),
+    format(length(unique(raw_data$activity_id)), big.mark = ","),
+    format(length(unique(raw_data$vendor_id)), big.mark = ","),
+    paste(format(timestamp_range[1], "%b %Y"), "to", format(timestamp_range[2], "%b %Y")),
+    format(length(first_approvers), big.mark = ","),
+    format(length(second_approvers), big.mark = ",")
+  )
+)
+
+# Create a simple table visualization
+p7 <- ggplot(summary_stats, aes(x = 1, y = reorder(Metric, seq_len(nrow(summary_stats))))) +
+  geom_tile(fill = "white", color = "gray80") +
+  geom_text(aes(label = Metric), hjust = 0, x = 1.02, size = 4, fontface = "bold") +
+  geom_text(aes(label = Value), hjust = 1, x = 0.98, size = 4, color = "blue") +
+  labs(
+    title = "Dataset Summary Statistics",
+    x = NULL,
+    y = NULL
+  ) +
+  theme_void() +
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 14),
+    axis.text = element_blank()
+  ) +
+  xlim(0.9, 1.1)
+
+# SAVE ALL PLOTS
+cat("Saving plots...\n")
+
+ggsave("1_timeline_overview.png", p1, width = 12, height = 8, dpi = 300)
+ggsave("2_invoice_amount_distribution.png", p2, width = 10, height = 6, dpi = 300)
+ggsave("3_data_quality_assessment.png", p3, width = 10, height = 6, dpi = 300)
+ggsave("4a_first_approvers_workload.png", p4a, width = 10, height = 8, dpi = 300)
+ggsave("4b_second_approvers_workload.png", p4b, width = 10, height = 8, dpi = 300)
+ggsave("5_monthly_activity.png", p5, width = 12, height = 6, dpi = 300)
+ggsave("6_amount_categories.png", p6, width = 10, height = 6, dpi = 300)
+ggsave("7_summary_statistics.png", p7, width = 10, height = 6, dpi = 300)
+
+# CREATE COMBINED DASHBOARDS
+cat("Creating combined dashboards...\n")
+
+# Dashboard 1: Overview
+dashboard1 <- (p1 | p7) / (p2 | p6)
+dashboard1 <- dashboard1 + plot_annotation(
+  title = "Elkjøp Nordic AP Process - Overview Dashboard",
+  theme = theme(plot.title = element_text(size = 16, face = "bold"))
+)
+
+# Dashboard 2: Data Quality & Resources
+dashboard2 <- (p3 | p5) / (p4a | p4b)
+dashboard2 <- dashboard2 + plot_annotation(
+  title = "Elkjøp Nordic AP Process - Data Quality & Resources Dashboard",
+  theme = theme(plot.title = element_text(size = 16, face = "bold"))
+)
+
+ggsave("dashboard1_overview.png", dashboard1, width = 16, height = 12, dpi = 300)
+ggsave("dashboard2_data_quality_resources.png", dashboard2, width = 16, height = 12, dpi = 300)
+
+# PRINT KEY FINDINGS
+cat("\n=== KEY FINDINGS FROM YOUR DATA ===\n")
+cat("• Time Period:", format(timestamp_range[1], "%b %d, %Y"), "to", format(timestamp_range[2], "%b %d, %Y"), "\n")
+cat("• Process Duration:", round(difftime(timestamp_range[2], timestamp_range[1], units = "days"), 1), "days\n")
+cat("• Invoice Amount Range: $", format(invoice_stats$min_amount, big.mark = ","), "to $", format(invoice_stats$max_amount, big.mark = ","), "\n")
+cat("• Average Invoice: $", format(round(invoice_stats$avg_amount), big.mark = ","), "\n")
+cat("• Total First Approvers:", length(first_approvers), "\n")
+cat("• Total Second Approvers:", length(second_approvers), "\n")
+cat("• Data Quality Issue: High missing values for approver IDs\n")
+
+cat("\n=== PLOTS GENERATED SUCCESSFULLY ===\n")
+cat("Individual Plots:\n")
+cat("1. 1_timeline_overview.png\n")
+cat("2. 2_invoice_amount_distribution.png\n")
+cat("3. 3_data_quality_assessment.png\n")
+cat("4. 4a_first_approvers_workload.png\n")
+cat("5. 4b_second_approvers_workload.png\n")
+cat("6. 5_monthly_activity.png\n")
+cat("7. 6_amount_categories.png\n")
+cat("8. 7_summary_statistics.png\n")
+cat("\nDashboards:\n")
+cat("• dashboard1_overview.png\n")
+cat("• dashboard2_data_quality_resources.png\n")
+```
+```{r}
+min(raw_data$invoice_amount, na.rm = TRUE)
+max(raw_data$invoice_amount, na.rm = TRUE)
+min(raw_data$invoice_date, na.rm = TRUE)
+max(raw_data$invoice_date, na.rm = TRUE)
+```
+```{r}
+# INVOICE CATEGORY OVERVIEW AND POSTING TYPE ANALYSIS
+
+# 1. INVOICE AMOUNT CATEGORIES BREAKDOWN
+amount_categories <- raw_data %>%
+  distinct(invoice_id, .keep_all = TRUE) %>%
+  mutate(
+    amount_category = cut(invoice_amount,
+                         breaks = c(0, 1000, 5000, 10000, 50000, 100000, 500000, Inf),
+                         labels = c("0-1K", "1K-5K", "5K-10K", "10K-50K", "50K-100K", "100K-500K", "500K+"),
+                         include.lowest = TRUE)
+  ) %>%
+  count(amount_category, name = "invoice_count") %>%
+  mutate(percentage = invoice_count / sum(invoice_count) * 100)
+
+# Plot 1: Invoice Amount Categories
+p1 <- ggplot(amount_categories, aes(x = amount_category, y = invoice_count, fill = amount_category)) +
+  geom_bar(stat = "identity", alpha = 0.8) +
+  geom_text(aes(label = paste0(invoice_count, "\n(", round(percentage, 1), "%)")), 
+            vjust = -0.3, size = 3.5) +
+  scale_fill_brewer(palette = "Set3") +
+  labs(
+    title = "Invoice Distribution by Amount Categories",
+    subtitle = "Breakdown of invoices by value ranges",
+    x = "Amount Category ($)",
+    y = "Number of Invoices",
+    fill = "Amount Category"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# 2. MANUAL VS AUTOMATIC POSTING ANALYSIS
+posting_analysis <- raw_data %>%
+  group_by(invoice_id) %>%
+  summarise(
+    has_manual_posting = any(activity_id == "Posted manually"),
+    has_auto_posting = any(activity_id == "FI Posted Automatically"),
+    final_status = last(activity_id)
+  ) %>%
+  mutate(
+    posting_type = case_when(
+      has_manual_posting ~ "Manual Posting",
+      has_auto_posting ~ "Automatic Posting",
+      TRUE ~ "No Posting/Other"
+    )
+  )
+
+posting_summary <- posting_analysis %>%
+  count(posting_type, name = "invoice_count") %>%
+  mutate(percentage = invoice_count / sum(invoice_count) * 100)
+
+# Plot 2: Manual vs Automatic Posting
+p2 <- ggplot(posting_summary, aes(x = posting_type, y = invoice_count, fill = posting_type)) +
+  geom_bar(stat = "identity", alpha = 0.8) +
+  geom_text(aes(label = paste0(invoice_count, "\n(", round(percentage, 1), "%)")), 
+            vjust = -0.3, size = 4) +
+  scale_fill_manual(values = c("Manual Posting" = "#FF6B6B", 
+                              "Automatic Posting" = "#4ECDC4", 
+                              "No Posting/Other" = "#95A5A6")) +
+  labs(
+    title = "Manual vs Automatic Invoice Posting",
+    subtitle = "Distribution of posting methods across all invoices",
+    x = "Posting Type",
+    y = "Number of Invoices",
+    fill = "Posting Type"
+  ) +
+  theme_minimal()
+
+# 3. DETAILED POSTING STATUS BREAKDOWN
+detailed_posting <- raw_data %>%
+  group_by(invoice_id) %>%
+  summarise(
+    final_activity = last(activity_id),
+    invoice_amount = first(invoice_amount)
+  ) %>%
+  mutate(
+    posting_status = case_when(
+      final_activity == "Posted manually" ~ "Manually Posted",
+      final_activity == "FI Posted Automatically" ~ "Automatically Posted",
+      final_activity == "Invoice document deleted" ~ "Deleted",
+      final_activity == "Approval rejected" ~ "Rejected",
+      final_activity %in% c("Sent for approval", "On hold at approver") ~ "Pending Approval",
+      TRUE ~ "Other Status"
+    )
+  )
+
+detailed_summary <- detailed_posting %>%
+  count(posting_status, name = "invoice_count") %>%
+  mutate(percentage = invoice_count / sum(invoice_count) * 100) %>%
+  arrange(desc(invoice_count))
+
+# Plot 3: Detailed Posting Status
+p3 <- ggplot(detailed_summary, aes(x = reorder(posting_status, -invoice_count), y = invoice_count, fill = posting_status)) +
+  geom_bar(stat = "identity", alpha = 0.8) +
+  geom_text(aes(label = paste0(invoice_count, "\n(", round(percentage, 1), "%)")), 
+            vjust = -0.3, size = 3.5) +
+  scale_fill_brewer(palette = "Set2") +
+  labs(
+    title = "Detailed Invoice Posting Status",
+    subtitle = "Final status breakdown of all invoices",
+    x = "Final Status",
+    y = "Number of Invoices",
+    fill = "Status"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# 4. POSTING TYPE BY AMOUNT CATEGORY
+posting_by_amount <- raw_data %>%
+  distinct(invoice_id, .keep_all = TRUE) %>%
+  mutate(
+    amount_category = cut(invoice_amount,
+                         breaks = c(0, 1000, 5000, 10000, 50000, 100000, 500000, Inf),
+                         labels = c("0-1K", "1K-5K", "5K-10K", "10K-50K", "50K-100K", "100K-500K", "500K+"),
+                         include.lowest = TRUE),
+    posting_type = case_when(
+      activity_id == "Posted manually" ~ "Manual",
+      activity_id == "FI Posted Automatically" ~ "Automatic",
+      TRUE ~ "Other"
+    )
+  ) %>%
+  filter(posting_type %in% c("Manual", "Automatic")) %>%
+  count(amount_category, posting_type, name = "count")
+
+# Plot 4: Posting Type by Amount Category
+p4 <- ggplot(posting_by_amount, aes(x = amount_category, y = count, fill = posting_type)) +
+  geom_bar(stat = "identity", position = "dodge", alpha = 0.8) +
+  geom_text(aes(label = count), position = position_dodge(width = 0.9), 
+            vjust = -0.3, size = 3) +
+  scale_fill_manual(values = c("Manual" = "#FF6B6B", "Automatic" = "#4ECDC4")) +
+  labs(
+    title = "Posting Method by Invoice Amount Category",
+    subtitle = "Comparison of manual vs automatic posting across different value ranges",
+    x = "Amount Category ($)",
+    y = "Number of Invoices",
+    fill = "Posting Type"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# 5. FINANCIAL IMPACT OF POSTING TYPES
+financial_impact <- raw_data %>%
+  distinct(invoice_id, .keep_all = TRUE) %>%
+  mutate(
+    posting_type = case_when(
+      activity_id == "Posted manually" ~ "Manual Posting",
+      activity_id == "FI Posted Automatically" ~ "Automatic Posting",
+      TRUE ~ "Other"
+    )
+  ) %>%
+  filter(posting_type %in% c("Manual Posting", "Automatic Posting")) %>%
+  group_by(posting_type) %>%
+  summarise(
+    total_amount = sum(invoice_amount, na.rm = TRUE),
+    avg_amount = mean(invoice_amount, na.rm = TRUE),
+    invoice_count = n()
+  ) %>%
+  mutate(
+    percentage_of_total = total_amount / sum(total_amount) * 100
+  )
+
+# Plot 5: Financial Impact
+p5 <- ggplot(financial_impact, aes(x = posting_type, y = total_amount/1000000, fill = posting_type)) +
+  geom_bar(stat = "identity", alpha = 0.8) +
+  geom_text(aes(label = paste0("$", round(total_amount/1000000, 1), "M\n", 
+                              round(percentage_of_total, 1), "%")), 
+            vjust = -0.3, size = 4) +
+  scale_fill_manual(values = c("Manual Posting" = "#FF6B6B", "Automatic Posting" = "#4ECDC4")) +
+  labs(
+    title = "Financial Impact: Manual vs Automatic Posting",
+    subtitle = "Total invoice value by posting method (in millions)",
+    x = "Posting Type",
+    y = "Total Amount (Millions $)",
+    fill = "Posting Type"
+  ) +
+  theme_minimal()
+
+# SAVE ALL PLOTS
+ggsave("invoice_amount_categories.png", p1, width = 12, height = 8, dpi = 300)
+ggsave("manual_vs_auto_posting.png", p2, width = 10, height = 8, dpi = 300)
+ggsave("detailed_posting_status.png", p3, width = 12, height = 8, dpi = 300)
+ggsave("posting_by_amount_category.png", p4, width = 12, height = 8, dpi = 300)
+ggsave("financial_impact_posting.png", p5, width = 10, height = 8, dpi = 300)
+
+# CREATE COMBINED DASHBOARD
+dashboard <- (p1 | p2) / (p3 | p4) / p5 +
+  plot_annotation(
+    title = "Comprehensive Invoice Analysis: Categories & Posting Methods",
+    theme = theme(plot.title = element_text(size = 16, face = "bold"))
+  )
+
+ggsave("invoice_analysis_dashboard.png", dashboard, width = 16, height = 18, dpi = 300)
+
+# PRINT SUMMARY STATISTICS
+cat("=== INVOICE CATEGORY & POSTING ANALYSIS SUMMARY ===\n")
+cat("\nAmount Category Distribution:\n")
+print(amount_categories)
+
+cat("\nPosting Type Distribution:\n")
+print(posting_summary)
+
+cat("\nDetailed Posting Status:\n")
+print(detailed_summary)
+
+cat("\nFinancial Impact by Posting Type:\n")
+print(financial_impact)
+
+cat("\n=== KEY INSIGHTS ===\n")
+cat("• Total invoices analyzed:", n_distinct(raw_data$invoice_id), "\n")
+cat("• Manual posting rate:", round(posting_summary$percentage[posting_summary$posting_type == "Manual Posting"], 1), "%\n")
+cat("• Automatic posting rate:", round(posting_summary$percentage[posting_summary$posting_type == "Automatic Posting"], 1), "%\n")
+cat("• Most common amount category:", as.character(amount_categories$amount_category[which.max(amount_categories$invoice_count)]), "\n")
+
+cat("\n=== PLOTS GENERATED ===\n")
+cat("1. invoice_amount_categories.png - Invoice distribution by value ranges\n")
+cat("2. manual_vs_auto_posting.png - Manual vs automatic posting comparison\n")
+cat("3. detailed_posting_status.png - Detailed final status breakdown\n")
+cat("4. posting_by_amount_category.png - Posting methods across amount categories\n")
+cat("5. financial_impact_posting.png - Financial impact of posting methods\n")
+cat("6. invoice_analysis_dashboard.png - Combined comprehensive dashboard\n")
+```
+
+
+
+```{r}
+# Load required libraries
+library(ggplot2)
+library(dplyr)
+library(scales)
+library(stringr)
+library(treemap)
+
+# Set working directory
+#setwd("C:/Users/Khali/Desktop/INN351 and INN354/INN354")
+
+# Import data
+raw_data <- read.csv("INN354 2025H Event log.csv")
+raw_data$timestamp <- as.POSIXct(strptime(raw_data$timestamp, "%Y-%m-%dT%H:%M:%SZ"))
+
+# ANALYSIS: GROUP FAILED POSTINGS BY ROOT CAUSE
+cat("=== FAILED POSTINGS ROOT CAUSE ANALYSIS ===\n")
+
+# Define root cause classification function
+classify_root_cause <- function(data) {
+  data %>%
+    group_by(invoice_id) %>%
+    summarise(
+      # Basic information
+      invoice_amount = first(invoice_amount),
+      vendor_id = first(vendor_id),
+      gl_account = first(gl_account),
+      cost_center = first(cost_center_id),
+      profit_center = first(profit_center_id),
+      currency = first(currency_id),
+      
+      # Activity patterns for root cause analysis
+      activity_sequence = paste(activity_id, collapse = " -> "),
+      has_manual_posting = any(activity_id == "Posted manually"),
+      has_auto_posting = any(activity_id == "FI Posted Automatically"),
+      has_rejection = any(activity_id == "Approval rejected"),
+      has_hold = any(activity_id == "On hold at approver"),
+      has_comment_request = any(activity_id == "Asked for Comment"),
+      has_goods_receipt = any(activity_id == "Get goods receipt from WM"),
+      has_initial_validation = any(activity_id == "Initial validation"),
+      has_data_management = any(activity_id == "Data management"),
+      n_approval_cycles = sum(activity_id == "Sent for approval"),
+      final_status = last(activity_id),
+      processing_days = as.numeric(difftime(max(timestamp), min(timestamp), units = "days")),
+      
+      # Root cause classification based on activity patterns
+      root_cause = case_when(
+        # Master Data Issues
+        has_goods_receipt & has_manual_posting & !has_rejection ~ "Incorrect/Incomplete Master Data",
+        has_initial_validation & has_data_management & has_manual_posting & n_approval_cycles == 0 ~ "Master Data Validation Failure",
+        
+        # Tax Code Issues
+        str_detect(activity_sequence, "Approval rejected.*tax|tax.*Approval rejected") ~ "Wrong/Missing Tax Codes",
+        has_comment_request & str_detect(activity_sequence, "validation.*Approval") ~ "Tax Code Configuration",
+        
+        # G/L or Cost Account Issues
+        (is.na(gl_account) | gl_account == "") & has_manual_posting ~ "Missing G/L Account",
+        (is.na(cost_center) | cost_center == "") & has_manual_posting ~ "Missing Cost Center",
+        (is.na(profit_center) | profit_center == "") & has_manual_posting ~ "Missing Profit Center",
+        has_rejection & has_data_management & n_approval_cycles > 1 ~ "Account Assignment Issues",
+        
+        # System Configuration Issues
+        has_auto_posting & has_manual_posting ~ "System Configuration Conflict",
+        has_hold & processing_days > 7 ~ "System Workflow Configuration",
+        n_approval_cycles > 2 ~ "Approval Workflow Configuration",
+        
+        # Process Exceptions
+        final_status == "Invoice document deleted" ~ "Process Exception - Invoice Deleted",
+        processing_days > 30 ~ "Process Exception - Stuck in System",
+        
+        # Default classification based on most common pattern
+        has_rejection ~ "Approval Process Failure",
+        has_manual_posting ~ "Manual Processing Required",
+        TRUE ~ "Other/Unclassified"
+      ),
+      
+      # Sub-category for more detailed analysis
+      root_cause_subcategory = case_when(
+        root_cause == "Incorrect/Incomplete Master Data" & has_goods_receipt ~ "Vendor Master Data",
+        root_cause == "Incorrect/Incomplete Master Data" & !has_goods_receipt ~ "Material Master Data",
+        root_cause == "Wrong/Missing Tax Codes" ~ "Tax Code Configuration",
+        root_cause %in% c("Missing G/L Account", "Missing Cost Center", "Missing Profit Center") ~ "Account Assignment",
+        root_cause == "System Configuration Conflict" ~ "Posting Interface Issues",
+        TRUE ~ root_cause
+      ),
+      
+      is_failure = root_cause != "Other/Unclassified" & 
+        (has_manual_posting | has_rejection | final_status == "Invoice document deleted")
+    )
+}
+
+# Apply root cause classification
+root_cause_analysis <- classify_root_cause(raw_data)
+
+# Filter for failed cases only
+failed_cases <- root_cause_analysis %>%
+  filter(is_failure == TRUE)
+
+cat("Total failed cases identified:", nrow(failed_cases), "\n")
+cat("Total value of failed invoices:", sum(failed_cases$invoice_amount, na.rm = TRUE), "\n")
+
+# PLOT 1: FAILED POSTINGS BY ROOT CAUSE (COUNT)
+root_cause_summary <- failed_cases %>%
+  group_by(root_cause) %>%
+  summarise(
+    case_count = n(),
+    total_amount = sum(invoice_amount, na.rm = TRUE),
+    avg_amount = mean(invoice_amount, na.rm = TRUE),
+    max_amount = max(invoice_amount, na.rm = TRUE),
+    avg_processing_days = mean(processing_days, na.rm = TRUE)
+  ) %>%
+  arrange(desc(case_count))
+
+p1 <- ggplot(root_cause_summary, 
+             aes(x = reorder(root_cause, -case_count), y = case_count)) +
+  geom_bar(stat = "identity", fill = "#E74C3C", alpha = 0.8) +
+  geom_text(aes(label = scales::comma(case_count)), 
+            vjust = -0.5, size = 5, fontface = "bold") +
+  labs(
+    title = "Failed Postings by Root Cause (Volume)",
+    subtitle = "Number of failed invoices categorized by primary root cause",
+    x = "Root Cause Category",
+    y = "Number of Failed Invoices"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(face = "bold", size = 16),
+    axis.text.x = element_text(angle = 45, hjust = 1, size = 11)
+  )
+
+print(p1)
+ggsave("failed_postings_by_root_cause_count.png", p1, width = 14, height = 8, dpi = 300)
+
+# PLOT 2: FAILED POSTINGS BY ROOT CAUSE (FINANCIAL IMPACT)
+p2 <- ggplot(root_cause_summary, 
+             aes(x = reorder(root_cause, -total_amount), y = total_amount)) +
+  geom_bar(stat = "identity", fill = "#3498DB", alpha = 0.8) +
+  geom_text(aes(label = scales::dollar(total_amount)), 
+            vjust = -0.5, size = 5, fontface = "bold") +
+  scale_y_continuous(labels = scales::dollar) +
+  labs(
+    title = "Failed Postings by Root Cause (Financial Impact)",
+    subtitle = "Total value of failed invoices by root cause category",
+    x = "Root Cause Category",
+    y = "Total Failed Amount"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(face = "bold", size = 16),
+    axis.text.x = element_text(angle = 45, hjust = 1, size = 11)
+  )
+
+print(p2)
+ggsave("failed_postings_by_root_cause_amount.png", p2, width = 14, height = 8, dpi = 300)
+
+# PLOT 3: AVERAGE INVOICE AMOUNT BY ROOT CAUSE
+p3 <- ggplot(root_cause_summary, 
+             aes(x = reorder(root_cause, -avg_amount), y = avg_amount)) +
+  geom_bar(stat = "identity", fill = "#9B59B6", alpha = 0.8) +
+  geom_text(aes(label = scales::dollar(avg_amount)), 
+            vjust = -0.5, size = 4, fontface = "bold") +
+  scale_y_continuous(labels = scales::dollar) +
+  labs(
+    title = "Average Invoice Amount by Root Cause",
+    subtitle = "Which root causes affect the highest-value invoices",
+    x = "Root Cause Category",
+    y = "Average Invoice Amount"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(face = "bold", size = 16),
+    axis.text.x = element_text(angle = 45, hjust = 1, size = 11)
+  )
+
+print(p3)
+ggsave("average_amount_by_root_cause.png", p3, width = 14, height = 8, dpi = 300)
+
+# PLOT 4: PROCESSING TIME BY ROOT CAUSE
+p4 <- ggplot(root_cause_summary, 
+             aes(x = reorder(root_cause, -avg_processing_days), y = avg_processing_days)) +
+  geom_bar(stat = "identity", fill = "#F39C12", alpha = 0.8) +
+  geom_text(aes(label = paste0(round(avg_processing_days, 1), " days")), 
+            vjust = -0.5, size = 4, fontface = "bold") +
+  labs(
+    title = "Average Processing Time by Root Cause",
+    subtitle = "How long different types of failures take to resolve",
+    x = "Root Cause Category",
+    y = "Average Processing Time (Days)"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(face = "bold", size = 16),
+    axis.text.x = element_text(angle = 45, hjust = 1, size = 11)
+  )
+
+print(p4)
+ggsave("processing_time_by_root_cause.png", p4, width = 14, height = 8, dpi = 300)
+
+# PLOT 5: TREEMAP OF ROOT CAUSES (VALUE AND VOLUME)
+treemap_data <- failed_cases %>%
+  group_by(root_cause) %>%
+  summarise(
+    total_amount = sum(invoice_amount, na.rm = TRUE),
+    case_count = n()
+  )
+
+png("root_cause_treemap.png", width = 1200, height = 800)
+treemap(treemap_data,
+        index = "root_cause",
+        vSize = "case_count",
+        vColor = "total_amount",
+        type = "value",
+        title = "Root Cause Analysis: Volume vs Financial Impact",
+        palette = "RdYlBu",
+        border.col = "black",
+        fontsize.title = 16,
+        fontsize.labels = 12,
+        fontcolor.labels = "black",
+        overlap.labels = 0.5)
+dev.off()
+
+# PLOT 6: ROOT CAUSE DISTRIBUTION BY INVOICE SIZE
+failed_cases_with_category <- failed_cases %>%
+  mutate(
+    amount_category = cut(invoice_amount,
+                         breaks = c(0, 1000, 10000, 50000, 100000, 500000, Inf),
+                         labels = c("Small (<1K)", "Medium (1K-10K)", "Large (10K-50K)", 
+                                   "Major (50K-100K)", "Strategic (100K-500K)", 
+                                   "Critical (>500K)"))
+  )
+
+root_cause_by_size <- failed_cases_with_category %>%
+  group_by(amount_category, root_cause) %>%
+  summarise(
+    case_count = n(),
+    total_amount = sum(invoice_amount, na.rm = TRUE)
+  ) %>%
+  filter(!is.na(amount_category))
+
+p6 <- ggplot(root_cause_by_size, 
+             aes(x = amount_category, y = case_count, fill = root_cause)) +
+  geom_bar(stat = "identity", position = "stack") +
+  labs(
+    title = "Root Cause Distribution by Invoice Size",
+    subtitle = "How failure causes vary across different invoice value ranges",
+    x = "Invoice Amount Category",
+    y = "Number of Failed Invoices",
+    fill = "Root Cause"
+  ) +
+  scale_fill_manual(values = c("#E74C3C", "#3498DB", "#9B59B6", "#F39C12", "#1ABC9C", 
+                              "#34495E", "#E67E22", "#27AE60", "#8E44AD")) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(face = "bold", size = 16),
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    legend.position = "bottom"
+  )
+
+print(p6)
+ggsave("root_cause_by_invoice_size.png", p6, width = 14, height = 10, dpi = 300)
+
+# PLOT 7: TOP VENDORS BY ROOT CAUSE
+vendor_root_cause <- failed_cases %>%
+  group_by(vendor_id, root_cause) %>%
+  summarise(
+    failed_invoices = n(),
+    total_failed_amount = sum(invoice_amount, na.rm = TRUE)
+  ) %>%
+  arrange(desc(total_failed_amount)) %>%
+  head(20)
+
+p7 <- ggplot(vendor_root_cause, 
+             aes(x = reorder(vendor_id, -total_failed_amount), y = total_failed_amount, fill = root_cause)) +
+  geom_bar(stat = "identity") +
+  scale_y_continuous(labels = scales::dollar) +
+  labs(
+    title = "Top 20 Vendors by Failed Amount and Root Cause",
+    subtitle = "Vendors with highest failed invoice values, categorized by root cause",
+    x = "Vendor ID",
+    y = "Total Failed Amount",
+    fill = "Root Cause"
+  ) +
+  scale_fill_manual(values = c("#E74C3C", "#3498DB", "#9B59B6", "#F39C12", "#1ABC9C")) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(face = "bold", size = 16),
+    axis.text.x = element_text(angle = 45, hjust = 1, size = 9),
+    legend.position = "bottom"
+  )
+
+print(p7)
+ggsave("vendors_by_root_cause.png", p7, width = 16, height = 10, dpi = 300)
+
+# PLOT 8: MONTHLY TREND OF ROOT CAUSES
+monthly_root_causes <- raw_data %>%
+  filter(invoice_id %in% failed_cases$invoice_id) %>%
+  group_by(invoice_id) %>%
+  summarise(month = floor_date(min(timestamp), "month")) %>%
+  left_join(failed_cases %>% select(invoice_id, root_cause), by = "invoice_id") %>%
+  group_by(month, root_cause) %>%
+  summarise(failed_count = n()) %>%
+  filter(!is.na(month))
+
+p8 <- ggplot(monthly_root_causes, 
+             aes(x = month, y = failed_count, color = root_cause)) +
+  geom_line(size = 1.2) +
+  geom_point(size = 2) +
+  labs(
+    title = "Monthly Trend of Failure Root Causes",
+    subtitle = "How different failure types evolve over time",
+    x = "Month",
+    y = "Number of Failed Invoices",
+    color = "Root Cause"
+  ) +
+  scale_color_manual(values = c("#E74C3C", "#3498DB", "#9B59B6", "#F39C12", "#1ABC9C")) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(face = "bold", size = 14),
+    legend.position = "bottom"
+  )
+
+print(p8)
+ggsave("root_cause_trends.png", p8, width = 14, height = 8, dpi = 300)
+
+# DETAILED ROOT CAUSE BREAKDOWN
+cat("\n=== DETAILED ROOT CAUSE BREAKDOWN ===\n")
+
+# Summary statistics
+root_cause_detailed <- failed_cases %>%
+  group_by(root_cause) %>%
+  summarise(
+    count = n(),
+    percentage = n() / nrow(failed_cases) * 100,
+    total_amount = sum(invoice_amount, na.rm = TRUE),
+    avg_amount = mean(invoice_amount, na.rm = TRUE),
+    avg_processing_days = mean(processing_days, na.rm = TRUE),
+    manual_posting_rate = mean(has_manual_posting) * 100,
+    rejection_rate = mean(has_rejection) * 100
+  ) %>%
+  arrange(desc(total_amount))
+
+print(root_cause_detailed)
+
+# Financial impact analysis
+financial_impact <- list()
+financial_impact$total_failed_amount <- sum(failed_cases$invoice_amount, na.rm = TRUE)
+financial_impact$top_root_cause <- root_cause_detailed$root_cause[1]
+financial_impact$top_root_cause_amount <- root_cause_detailed$total_amount[1]
+financial_impact$top_root_cause_percentage <- root_cause_detailed$percentage[1]
+
+cat("\nFINANCIAL IMPACT ANALYSIS:\n")
+cat("Total failed amount:", scales::dollar(financial_impact$total_failed_amount), "\n")
+cat("Top root cause:", financial_impact$top_root_cause, "\n")
+cat("Amount attributed to top cause:", scales::dollar(financial_impact$top_root_cause_amount), "\n")
+cat("Percentage of total failures:", round(financial_impact$top_root_cause_percentage, 1), "%\n")
+
+# VENDOR-SPECIFIC ROOT CAUSE ANALYSIS
+vendor_analysis <- failed_cases %>%
+  group_by(vendor_id, root_cause) %>%
+  summarise(
+    failed_invoices = n(),
+    total_failed_amount = sum(invoice_amount, na.rm = TRUE),
+    avg_processing_days = mean(processing_days, na.rm = TRUE)
+  ) %>%
+  arrange(desc(total_failed_amount))
+
+# Save detailed analysis
+write.csv(root_cause_detailed, "root_cause_detailed_analysis.csv", row.names = FALSE)
+write.csv(vendor_analysis, "vendor_root_cause_analysis.csv", row.names = FALSE)
+write.csv(failed_cases, "all_failed_cases_with_root_causes.csv", row.names = FALSE)
+
+# RECOMMENDATIONS BASED ON ROOT CAUSE ANALYSIS
+cat("\n=== RECOMMENDATIONS BY ROOT CAUSE ===\n")
+
+recommendations <- data.frame(
+  Root_Cause = character(),
+  Recommendation = character(),
+  Expected_Impact = character(),
+  stringsAsFactors = FALSE
+)
+
+recommendations <- rbind(recommendations, data.frame(
+  Root_Cause = "Incorrect/Incomplete Master Data",
+  Recommendation = "Implement vendor master data validation during invoice entry + automated data quality checks",
+  Expected_Impact = "Reduce failures by 40-60%, improve processing time by 50%"
+))
+
+recommendations <- rbind(recommendations, data.frame(
+  Root_Cause = "Wrong/Missing Tax Codes",
+  Recommendation = "Create tax code validation rules + vendor tax code training + automated tax determination",
+  Expected_Impact = "Eliminate 80% of tax-related failures"
+))
+
+recommendations <- rbind(recommendations, data.frame(
+  Root_Cause = "Missing G/L Account",
+  Recommendation = "Implement mandatory account assignment + default account rules + account validation workflow",
+  Expected_Impact = "Reduce account-related failures by 70%"
+))
+
+recommendations <- rbind(recommendations, data.frame(
+  Root_Cause = "System Configuration Issues",
+  Recommendation = "Review and optimize system configuration + implement configuration change controls",
+  Expected_Impact = "Improve system stability, reduce configuration errors by 60%"
+))
+
+recommendations <- rbind(recommendations, data.frame(
+  Root_Cause = "Approval Process Failure",
+  Recommendation = "Streamline approval workflow + implement approval SLAs + escalation procedures",
+  Expected_Impact = "Reduce approval delays by 50%, improve cycle time by 40%"
+))
+
+print(recommendations)
+write.csv(recommendations, "root_cause_recommendations.csv", row.names = FALSE)
+
+cat("\n=== ANALYSIS COMPLETE ===\n")
+cat("Generated 8 comprehensive root cause analysis visualizations\n")
+cat("Detailed analysis saved to CSV files for further investigation\n")
+cat("Prioritized recommendations provided for each major root cause category\n")
+```
+
