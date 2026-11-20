@@ -2,15 +2,15 @@
 
 This project is part of the **IND320 – Data to Decision** course at the Norwegian University of Life Sciences (NMBU).
 
-The project focuses on Norwegian reservoir data, electricity flows and weather data. It uses Python, APIs, databases, data analysis, machine learning and interactive visualizations.
+The project focuses on Norwegian reservoir data, electricity flows, weather data and machine learning for energy consumption forecasting. It uses Python, APIs, databases, data analysis, machine learning and interactive visualizations.
 
 ## Project Links
-Streamlit: https://nmbu-ind320-sscdbwzeogng9oauvspozi.streamlit.app/
 
+**Streamlit:** https://nmbu-ind320-sscdbwzeogng9oauvspozi.streamlit.app/
 
 ## Project Overview
 
-The project is divided into three main parts.
+The project is divided into four main parts.
 
 ### Part 1 – Reservoir Data Analysis
 
@@ -52,6 +52,42 @@ The work includes:
 - Performing STL decomposition
 - Performing spectrogram analysis
 - Creating plots and interactive analysis tools in Streamlit
+
+### Part 4 – Machine Learning and Energy Consumption Forecasting
+
+Part 4 focuses on using machine learning and time-series methods to predict future energy consumption in cooperation with Indre Salten Energi AS.
+
+The main objective is to develop models that can forecast energy consumption for the coming days.
+
+The analysis focuses on patterns and factors that influence energy consumption, including:
+
+- Day of the week and weekday patterns
+- Hour of the day and daily consumption patterns
+- Monthly and seasonal variations
+- Temperature and weather conditions
+- Historical energy consumption
+- Electricity prices and relevant external factors
+
+The planned work includes:
+
+- Exploring and preparing energy consumption data
+- Performing exploratory data analysis (EDA)
+- Identifying daily, weekly and seasonal patterns
+- Creating time-based and weather-related features
+- Developing and evaluating forecasting models
+- Comparing statistical and machine learning approaches
+- Visualizing forecasting results
+
+Potential forecasting methods include:
+
+- ARIMA and SARIMA
+- Exponential Smoothing (ETS)
+- Holt-Winters
+- Random Forest
+- XGBoost
+- LSTM and GRU neural networks
+
+The goal is to compare different approaches and identify suitable models for short-term energy consumption forecasting.
 
 ## Data Sources
 
@@ -95,11 +131,27 @@ The main weather variables are:
 - Observation time
 - Weather sampling point and region
 
-The weather data is used for time-series analysis, anomaly detection and visualization.
+The weather data is used for time-series analysis, anomaly detection and visualization. It can also support energy consumption forecasting.
+
+### Energy Consumption Data – Indre Salten Energi AS
+
+Part 4 uses energy consumption data provided in cooperation with Indre Salten Energi AS.
+
+The data is intended for analysing historical consumption and developing short-term forecasting models.
+
+The analysis focuses on:
+
+- Historical energy consumption
+- Daily and weekly consumption patterns
+- Seasonal variations
+- Weather-related effects
+- Time-based consumption patterns
+
+Weather and calendar information can be combined with historical consumption to improve forecasting performance.
 
 ## Data Processing and Storage
 
-The project uses different tools to collect, process and store data.
+The project uses different tools to collect, process, store and analyse data.
 
 The main workflow is:
 
@@ -109,7 +161,8 @@ The main workflow is:
 4. Store energy data in Cassandra.
 5. Extract and transfer prepared data to MongoDB.
 6. Load reservoir and weather data from MongoDB into Streamlit.
-7. Analyse and visualize the data using interactive charts and maps.
+7. Prepare historical energy consumption data for machine learning.
+8. Analyse and visualize the data using interactive charts, maps and forecasting models.
 
 ## Streamlit Application
 
@@ -121,6 +174,7 @@ It includes the following sections:
 Introduction to the IND320 project and an overview of the available data.
 
 ### Data
+
 - Data Table
 - ENTSO-E
 - Reservoir Statistics
@@ -128,6 +182,7 @@ Introduction to the IND320 project and an overview of the available data.
 - Currency Rates
 
 ### Analysis
+
 - Plot
 - Time Series Analysis
 - Data Quality Analysis
@@ -136,15 +191,19 @@ Introduction to the IND320 project and an overview of the available data.
 - Sliding Window Correlation
 
 ### Geographic Analysis
+
 - Interactive Map
 - Norwegian electricity price areas
 - NVE weather regions
 - Reservoir statistics
 
 ### Machine Learning
+
 - Reservoir Forecasting
 - SARIMAX
 - Random Forest
+
+Part 4 also includes a separate machine learning notebook for energy consumption forecasting.
 
 The application uses MongoDB Atlas to load stored data. This reduces its dependence on local CSV files and makes the data available to the deployed Streamlit application.
 
@@ -160,8 +219,12 @@ The project uses several statistical and machine learning methods.
 | LOF | Detection of unusual observations |
 | STL | Separating trend, seasonal and residual components |
 | Spectrogram | Studying frequency changes over time |
-| SARIMAX | Time-series forecasting |
+| ARIMA/SARIMA | Statistical time-series forecasting |
+| ETS | Exponential smoothing for forecasting |
+| Holt-Winters | Forecasting with trend and seasonality |
 | Random Forest | Machine learning forecasting |
+| XGBoost | Gradient boosting for forecasting |
+| LSTM/GRU | Neural network models for sequential data |
 
 ## Technologies
 
@@ -175,6 +238,8 @@ The project uses several statistical and machine learning methods.
 - Folium
 - Scikit-learn
 - Statsmodels
+- XGBoost
+- TensorFlow/Keras
 - Jupyter Notebook
 - Open-Meteo API
 - ERA5
@@ -191,17 +256,17 @@ The main project structure is organized as follows:
 
 ```text
 NMBU-IND320/
-│
+├── devcontainer/
 ├── Notbook/
 │   ├── Part1/
 │   ├── Part2/
-│   └── Part3/
+│   ├── Part3/
+│   └── Part4/
+│──shapefiles/      
 │
 ├── Streamlit-app/
 │   ├── app.py
 │   ├── data_loader.py
-│   ├── requirements.txt
-│   ├── pyproject.toml
 │   │
 │   └── pages/
 │       ├── home.py
@@ -220,45 +285,37 @@ NMBU-IND320/
 │       ├── sliding_window.py
 │       └── currency_rates.py
 │
-├── load_nve_to_cassandra.py
-├── export_nve_to_mongodb.py
-├── entsoe_data.py
-├── load_entsoe_to_cassandra.py
-├── load_entsoe_to_mongodb.py
-├── extract_entsoe_from_cassandra.py
-│
 ├── requirements.txt
 ├── pyproject.toml
-├── uv.lock
 ├── README.md
 └── .gitignore
 ```
 
-*Note: The folder and file names above should match the final structure in the GitHub repository.*
+Note: The folder and file names above should match the final structure in the GitHub repository.
 
 ## Running the Streamlit Application
 
-1. Clone the repository:
+Clone the repository:
 
 ```bash
 git clone https://github.com/khalidrashed/NMBU-IND320.git
 ```
 
-2. Open the project folder:
+Open the project folder:
 
 ```bash
 cd NMBU-IND320
 ```
 
-3. Install the required dependencies:
+Install the required dependencies:
 
 ```bash
 pip install -r Streamlit-app/requirements.txt
 ```
 
-4. Configure the MongoDB connection string using the `MONGODB_URI` environment variable or Streamlit Secrets.
+Configure the MongoDB connection string using the `MONGODB_URI` environment variable or Streamlit Secrets.
 
-5. Start the application:
+Start the application:
 
 ```bash
 streamlit run Streamlit-app/app.py
@@ -281,9 +338,11 @@ The data processing, analysis, implementation and interpretation were reviewed a
 
 ## Conclusion
 
-This project combines energy data, reservoir statistics and weather observations in one data analysis and visualization application.
+This project combines energy data, reservoir statistics, weather observations and machine learning in one data analysis and visualization project.
 
-It demonstrates how APIs, databases, statistical methods and machine learning can be used to explore Norwegian energy-related data and support further analysis and forecasting.
+Across its four parts, the project demonstrates how APIs, databases, statistical methods and machine learning can be used to explore Norwegian energy-related data, identify patterns, detect anomalies and develop forecasting models.
+
+The project also provides practical experience with data engineering, time-series analysis, interactive visualization and predictive modelling.
 
 **Course:** IND320 – Data to Decision  
 **University:** Norwegian University of Life Sciences (NMBU)
