@@ -1,0 +1,15 @@
+```text
+streamlit
+pandas
+numpy
+plotly
+matplotlib
+geopandas
+scipy
+scikit-learn
+requests
+openpyxl
+Pillow
+pyarrow
+statsmodels
+```
