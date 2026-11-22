@@ -1,4 +1,4 @@
-# NMBU-IND320 – Data to Decision
+# NMBU-IND320 – Data to Decision >Khalid Rashed>
 
 This project is part of the **IND320 – Data to Decision** course at the Norwegian University of Life Sciences (NMBU).
 
