@@ -125,7 +125,7 @@ st.info(
 
 st.divider()
 
-st.caption("IND320 – Energy Data Analysis and Machine Learning | NMBU")
+st.caption("IND320 – Energy Data Analysis and Machine Learning | NMBU´| Khalid Rashed")
 
 
 
